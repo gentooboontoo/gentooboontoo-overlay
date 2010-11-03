@@ -43,7 +43,7 @@ wacom_check() {
 		eerror "EHCI , OHCI , USB Human Interface Device+HID input layer)"
 		eerror
 		eerror "Then recompile kernel."
-		die "Wacom statically built in kernel!"
+		die "Wacom module already built in kernel!"
 	fi
 }
 
