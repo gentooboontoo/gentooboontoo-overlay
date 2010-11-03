@@ -28,8 +28,32 @@ S=${WORKDIR}/${MY_PN}-${PV/_p/-}
 MODULE_NAMES="wacom(input:${S}/src:${S}/src)"
 BUILD_TARGETS="all"
 
+wacom_check() {
+	ebegin "Checking wacom module not statically built in kernel"
+	linux_chkconfig_builtin TABLET_USB_WACOM
+	eend $?
+
+	if [[ $? -eq 0 ]]; then
+		eerror "You must not have wacom module built in your kernel."
+		eerror "Disable it in the kernel, found at:"
+		eerror
+		eerror " Device Drivers"
+		eerror "    Input device support"
+		eerror "        Tablets"
+		eerror "            <> Wacom Intuos/Graphire tablet support (USB)"
+		eerror
+		eerror '(in the "USB support" page it is suggested to include also:'
+		eerror "EHCI , OHCI , USB Human Interface Device+HID input layer)"
+		eerror
+		eerror "Then recompile kernel."
+		die "Wacom statically built in kernel!"
+	fi
+}
+
+
 pkg_setup() {
 	linux-mod_pkg_setup
+	wacom_check
 }
 
 src_prepare() {
