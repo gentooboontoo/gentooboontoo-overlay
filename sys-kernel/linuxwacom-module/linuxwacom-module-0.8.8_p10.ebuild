@@ -1,6 +1,6 @@
 # Copyright 1999-2010 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Header: /var/cvsroot/gentoo-x86/sys-kernel/linuxwacom-module/linuxwacom-module-0.8.8_p10.ebuild,v 1.1 2010/11/03 10:46:29 pva Exp $
 
 EAPI="2"
 inherit eutils toolchain-funcs linux-mod autotools
@@ -15,7 +15,7 @@ IUSE="usb"
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="amd64 hppa ~ppc ~ppc64 x86"
+KEYWORDS="~amd64 ~hppa ~ppc ~ppc64 ~x86"
 
 RDEPEND="sys-fs/udev
 	sys-libs/ncurses"
@@ -29,13 +29,10 @@ MODULE_NAMES="wacom(input:${S}/src:${S}/src)"
 BUILD_TARGETS="all"
 
 wacom_check() {
-	ebegin "Checking wacom module not statically built in kernel"
-	linux_chkconfig_builtin TABLET_USB_WACOM
-	eend $?
+	einfo "Checking wacom module not built in kernel"
 
-	if [[ $? -eq 0 ]]; then
-		eerror "You must not have wacom module built in your kernel."
-		eerror "Disable it in the kernel, found at:"
+	if $(linux_chkconfig_present TABLET_USB_WACOM); then
+		eerror "Please, disable wacom module in the kernel:"
 		eerror
 		eerror " Device Drivers"
 		eerror "    Input device support"
@@ -49,7 +46,6 @@ wacom_check() {
 		die "Wacom statically built in kernel!"
 	fi
 }
-
 
 pkg_setup() {
 	linux-mod_pkg_setup
