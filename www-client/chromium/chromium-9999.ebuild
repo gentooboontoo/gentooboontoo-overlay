@@ -55,7 +55,7 @@ RDEPEND+="
 	)
 	x11-misc/xdg-utils
 	virtual/ttf-fonts
-	"
+	gecko-mediaplayer? ( !www-plugins/gecko-mediaplayer[gnome] )"
 
 src_unpack() {
 	subversion_src_unpack
@@ -141,11 +141,13 @@ pkg_setup() {
 
 src_prepare() {
 	# Enable optional support for gecko-mediaplayer.
+	epatch "${FILESDIR}"/${PN}-gecko-mediaplayer-r1.patch
 
 	# Make sure we don't use bundled libvpx headers.
 	epatch "${FILESDIR}"/${PN}-system-vpx-r2.patch
 
 	# Make sure we don't use bundled FLAC.
+	epatch "${FILESDIR}"/${PN}-system-flac-r0.patch
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
