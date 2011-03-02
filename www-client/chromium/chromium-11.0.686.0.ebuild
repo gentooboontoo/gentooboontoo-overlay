@@ -1,26 +1,25 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999.ebuild,v 1.136 2011/02/25 10:37:57 wired Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-11.0.686.0.ebuild,v 1.1 2011/03/01 14:41:18 phajdan.jr Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
+V8_DEPEND="3.1.6.1"
 
 inherit eutils fdo-mime flag-o-matic multilib pax-utils portability python \
-	subversion toolchain-funcs versionator virtualx
+	toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-# subversion eclass fetches gclient, which will then fetch chromium itself
-ESVN_REPO_URI="http://src.chromium.org/svn/trunk/tools/depot_tools"
-EGCLIENT_REPO_URI="http://src.chromium.org/svn/trunk/src/"
+SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS=""
-IUSE="cups +gecko-mediaplayer gnome gnome-keyring"
+KEYWORDS="~amd64 ~x86"
+IUSE="cups gnome gnome-keyring"
 
 RDEPEND="app-arch/bzip2
-	dev-lang/v8
+	>=dev-lang/v8-${V8_DEPEND}
 	dev-libs/dbus-glib
 	>=dev-libs/icu-4.4.1
 	>=dev-libs/libevent-1.4.13
@@ -38,7 +37,7 @@ RDEPEND="app-arch/bzip2
 	>=media-video/ffmpeg-0.6_p25767[threads]
 	cups? ( >=net-print/cups-1.3.11 )
 	sys-libs/zlib
-	>=x11-libs/gtk+-2.14.7
+	x11-libs/gtk+:2
 	x11-libs/libXScrnSaver
 	x11-libs/libXtst"
 DEPEND="${RDEPEND}
@@ -54,51 +53,7 @@ RDEPEND+="
 		x11-themes/xfce4-icon-theme
 	)
 	x11-misc/xdg-utils
-	virtual/ttf-fonts
-	gecko-mediaplayer? ( !www-plugins/gecko-mediaplayer[gnome] )"
-
-src_unpack() {
-	subversion_src_unpack
-	mv "${S}" "${WORKDIR}"/depot_tools
-
-	# Most subversion checks and configurations were already run
-	EGCLIENT="${WORKDIR}"/depot_tools/gclient
-	cd "${ESVN_STORE_DIR}" || die "gclient: can't chdir to ${ESVN_STORE_DIR}"
-
-	if [[ ! -d ${PN} ]]; then
-		mkdir -p "${PN}" || die "gclient: can't mkdir ${PN}."
-	fi
-
-	cd "${PN}" || die "gclient: can't chdir to ${PN}"
-
-	if [[ ! -f .gclient ]]; then
-		einfo "gclient config -->"
-		${EGCLIENT} config ${EGCLIENT_REPO_URI} || die "gclient: error creating config"
-	fi
-
-	einfo "gclient sync start -->"
-	einfo "     repository: ${EGCLIENT_REPO_URI}"
-	${EGCLIENT} sync --nohooks || die
-	einfo "   working copy: ${ESVN_STORE_DIR}/${PN}"
-
-	mkdir -p "${S}"
-	# From export_tarball.py
-	CHROMIUM_EXCLUDES="--exclude=src/chrome/test/data
-	--exclude=src/chrome/tools/test/reference_build
-	--exclude=src/chrome_frame --exclude=src/gears/binaries
-	--exclude=src/net/data/cache_tests --exclude=src/o3d/documentation
-	--exclude=src/o3d/samples --exclude=src/third_party/lighttpd
-	--exclude=src/third_party/WebKit/LayoutTests
-	--exclude=src/webkit/data/layout_tests
-	--exclude=src/webkit/tools/test/reference_build"
-	rsync -rlpgo --exclude=".svn/" ${CHROMIUM_EXCLUDES} src/ "${S}" || die "gclient: can't export to ${S}."
-
-	# Display correct svn revision in about box, and log new version
-	CREV=$(subversion__svn_info "src" "Revision")
-	echo ${CREV} > "${S}"/build/LASTCHANGE.in || die "setting revision failed"
-	. src/chrome/VERSION
-	elog "Installing/updating to version ${MAJOR}.${MINOR}.${BUILD}.${PATCH}_p${CREV} "
-}
+	virtual/ttf-fonts"
 
 egyp() {
 	set -- build/gyp_chromium --depth=. "${@}"
@@ -140,14 +95,11 @@ pkg_setup() {
 }
 
 src_prepare() {
-	# Enable optional support for gecko-mediaplayer.
-	epatch "${FILESDIR}"/${PN}-gecko-mediaplayer-r1.patch
-
 	# Make sure we don't use bundled libvpx headers.
 	epatch "${FILESDIR}"/${PN}-system-vpx-r2.patch
 
-	# Make sure we don't use bundled FLAC.
-	epatch "${FILESDIR}"/${PN}-system-flac-r0.patch
+	# Make sure we don't use bundled ICU headers.
+	epatch "${FILESDIR}"/${PN}-system-icu-r0.patch
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
@@ -180,9 +132,12 @@ src_prepare() {
 		\! -path 'third_party/zlib/contrib/minizip/*' \
 		-delete || die
 
-	# Provide our own gyp file to use system flac.
-	# TODO: move this upstream.
-	cp "${FILESDIR}/flac.gyp" "third_party/flac" || die
+	# Check for the maintainer to ensure that the dependencies
+	# are up-to-date.
+	local v8_bundled="$(v8-extract-version v8/src/version.cc)"
+	if [ "${V8_DEPEND}" != "${v8_bundled}" ]; then
+		die "update v8 dependency to ${v8_bundled}"
+	fi
 
 	# Remove bundled v8.
 	find v8 -type f \! -iname '*.gyp*' -delete || die
@@ -218,6 +173,7 @@ src_configure() {
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 	myconf+="
 		-Duse_system_bzip2=1
+		-Duse_system_flac=1
 		-Duse_system_ffmpeg=1
 		-Duse_system_icu=1
 		-Duse_system_libevent=1
@@ -256,14 +212,6 @@ src_configure() {
 	myconf+="
 		-Dlinux_sandbox_path=${CHROMIUM_HOME}/chrome_sandbox
 		-Dlinux_sandbox_chrome_path=${CHROMIUM_HOME}/chrome"
-
-	if use gecko-mediaplayer; then
-		# Disable hardcoded blacklist for gecko-mediaplayer.
-		# When www-plugins/gecko-mediaplayer is compiled with USE=gnome, it causes
-		# the browser to hang. We can handle the situation via dependencies,
-		# thus making it possible to use gecko-mediaplayer.
-		append-flags -DGENTOO_CHROMIUM_ENABLE_GECKO_MEDIAPLAYER
-	fi
 
 	# Our system ffmpeg should support more codecs than the bundled one
 	# for Chromium.
@@ -343,8 +291,7 @@ src_install() {
 	doins -r out/Release/locales || die
 	doins -r out/Release/resources || die
 
-	# chrome.1 is for chromium --help
-	newman out/Release/chrome.1 chrome.1 || die
+	newman out/Release/chrome.1 chromium.1 || die
 	newman out/Release/chrome.1 chromium-browser.1 || die
 
 	# Chromium looks for these in its folder
@@ -364,7 +311,7 @@ src_install() {
 	if use gnome; then
 		dodir /usr/share/gnome-control-center/default-apps || die
 		insinto /usr/share/gnome-control-center/default-apps
-		doins "${FILESDIR}"/chromium.xml || die
+		doins "${FILESDIR}"/chromium-browser.xml || die
 	fi
 }
 

@@ -1,6 +1,6 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-11.0.672.2-r1.ebuild,v 1.2 2011/02/22 18:24:22 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-11.0.672.2-r3.ebuild,v 1.1 2011/03/01 13:52:49 wired Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
@@ -37,7 +37,7 @@ RDEPEND="app-arch/bzip2
 	>=media-video/ffmpeg-0.6_p25767[threads]
 	cups? ( >=net-print/cups-1.3.11 )
 	sys-libs/zlib
-	>=x11-libs/gtk+-2.14.7
+	x11-libs/gtk+:2
 	x11-libs/libXScrnSaver
 	x11-libs/libXtst"
 DEPEND="${RDEPEND}
@@ -296,6 +296,8 @@ src_install() {
 	# It is important that we name the target "chromium-browser",
 	# xdg-utils expect it; bug #355517.
 	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium-browser || die
+	# keep the old symlink around for consistency
+	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium || die
 
 	insinto "${CHROMIUM_HOME}"
 	doins out/Release/chrome.pak || die
@@ -304,8 +306,7 @@ src_install() {
 	doins -r out/Release/locales || die
 	doins -r out/Release/resources || die
 
-	# chrome.1 is for chromium --help
-	newman out/Release/chrome.1 chrome.1 || die
+	newman out/Release/chrome.1 chromium.1 || die
 	newman out/Release/chrome.1 chromium-browser.1 || die
 
 	# Chromium looks for these in its folder
@@ -325,7 +326,7 @@ src_install() {
 	if use gnome; then
 		dodir /usr/share/gnome-control-center/default-apps || die
 		insinto /usr/share/gnome-control-center/default-apps
-		doins "${FILESDIR}"/chromium.xml || die
+		doins "${FILESDIR}"/chromium-browser.xml || die
 	fi
 }
 
