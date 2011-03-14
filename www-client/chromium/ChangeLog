@@ -1,6 +1,43 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.304 2011/03/10 19:45:12 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.311 2011/03/13 19:39:25 phajdan.jr Exp $
+
+  13 Mar 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-10.0.648.133.ebuild, chromium-11.0.696.3.ebuild,
+  chromium-9999-r1.ebuild:
+  Fix src_test after virtualx.eclass updates, bug #358373 by graaff. Also
+  clean up optional dependency code.
+
+  13 Mar 2011; Markos Chandras <hwoarang@gentoo.org>
+  chromium-10.0.648.133.ebuild:
+  Stable on amd64 wrt bug #358581
+
+  13 Mar 2011; Christian Faulhammer <fauli@gentoo.org>
+  chromium-10.0.648.133.ebuild:
+  stable x86, security bug 358581
+
+*chromium-11.0.696.3 (12 Mar 2011)
+
+  12 Mar 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -files/chromium-tests-r0.patch, -chromium-9.0.597.107.ebuild,
+  -chromium-11.0.686.3.ebuild, +chromium-11.0.696.3.ebuild, metadata.xml:
+  Version bump for dev channel release. Remove old.
+
+  12 Mar 2011; Christian Faulhammer <fauli@gentoo.org>
+  chromium-10.0.648.127.ebuild:
+  stable x86, security bug 357963
+
+*chromium-10.0.648.133 (12 Mar 2011)
+
+  12 Mar 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-10.0.648.126.ebuild, +chromium-10.0.648.133.ebuild:
+  Version bump for stable channel release. Remove old.
+
+  11 Mar 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-10.0.648.127.ebuild, chromium-11.0.696.1.ebuild,
+  chromium-9999-r1.ebuild:
+  Update dependencies to require a recent enough libvpx version, bug #358361
+  by Joel Rebello <joelmadzu@gmail.com>.
 
   10 Mar 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
   chromium-10.0.648.127.ebuild, chromium-11.0.696.1.ebuild,
