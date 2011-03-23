@@ -267,6 +267,9 @@ src_configure() {
 	# Avoid a build error with -Os, bug #352457.
 	replace-flags "-Os" "-O2"
 
+	# Fix vpx header issue
+	append-flags "-DUSE_SYSTEM_VPX=1"
+
 	egyp ${myconf} || die
 }
 
