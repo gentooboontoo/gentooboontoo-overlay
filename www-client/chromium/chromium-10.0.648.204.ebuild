@@ -1,10 +1,9 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-10.0.648.151.ebuild,v 1.1 2011/03/18 11:23:27 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-10.0.648.204.ebuild,v 1.2 2011/03/25 11:20:35 angelos Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
-V8_DEPEND="3.0.12.30"
 
 inherit eutils flag-o-matic multilib pax-utils portability python \
 	toolchain-funcs versionator virtualx
@@ -15,11 +14,10 @@ SRC_URI="http://build.chromium.org/buildbot/official/${P}.tar.bz2"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~x86"
+KEYWORDS="amd64 ~arm ~x86"
 IUSE="cups +gecko-mediaplayer gnome gnome-keyring"
 
 RDEPEND="app-arch/bzip2
-	>=dev-lang/v8-${V8_DEPEND}
 	dev-libs/dbus-glib
 	>=dev-libs/icu-4.4.1
 	>=dev-libs/libevent-1.4.13
@@ -42,7 +40,6 @@ RDEPEND="app-arch/bzip2
 	x11-libs/libXtst"
 DEPEND="${RDEPEND}
 	dev-lang/perl
-	>=dev-util/chromium-tools-0.1.4
 	>=dev-util/gperf-3.0.3
 	>=dev-util/pkgconfig-0.23
 	sys-devel/flex
@@ -138,23 +135,6 @@ src_prepare() {
 	# TODO: move this upstream.
 	cp "${FILESDIR}/flac.gyp" "third_party/flac" || die
 
-	# Check for the maintainer to ensure that the dependencies
-	# are up-to-date.
-	local v8_bundled="$(v8-extract-version v8/src/version.cc)"
-	if [ "${V8_DEPEND}" != "${v8_bundled}" ]; then
-		die "update v8 dependency to ${v8_bundled}"
-	fi
-
-	# Remove bundled v8.
-	find v8 -type f \! -iname '*.gyp*' -delete || die
-
-	# The implementation files include v8 headers with full path,
-	# like #include "v8/include/v8.h". Make sure the system headers
-	# will be used.
-	# TODO: find a solution that can be upstreamed.
-	rmdir v8/include || die
-	ln -s /usr/include v8/include || die
-
 	# Make sure the build system will use the right python, bug #344367.
 	# Only convert directories that need it, to save time.
 	python_convert_shebangs -q -r 2 build tools
@@ -179,7 +159,6 @@ src_configure() {
 		-Duse_system_libpng=1
 		-Duse_system_libxml=1
 		-Duse_system_speex=1
-		-Duse_system_v8=1
 		-Duse_system_vpx=1
 		-Duse_system_xdg_utils=1
 		-Duse_system_zlib=1"
