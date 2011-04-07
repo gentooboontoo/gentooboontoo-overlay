@@ -1,6 +1,61 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.320 2011/03/26 09:31:15 fauli Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.329 2011/04/06 19:57:12 phajdan.jr Exp $
+
+  06 Apr 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-10.0.648.204.ebuild:
+  Backport the fix for V8 on hardened, bug #361747 by Kai Dietrich
+  <mail@cleeus.de>.
+
+*chromium-12.0.725.0 (06 Apr 2011)
+
+  06 Apr 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-12.0.712.0.ebuild, +chromium-12.0.725.0.ebuild:
+  Version bump for dev channel release. Remove old.
+
+*chromium-11.0.696.34 (05 Apr 2011)
+
+  05 Apr 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-11.0.696.25.ebuild, +chromium-11.0.696.34.ebuild:
+  Version bump for beta channel release. Remove old.
+
+  05 Apr 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-gssapi-heimdal-r0.patch, chromium-12.0.712.0-r1.ebuild,
+  chromium-9999-r1.ebuild:
+  Also run net_unittests in src_test (known issues: bug #361885, bug
+  #361939). Add optional dependency on Kerberos for HTTP authentication.
+
+*chromium-12.0.712.0-r1 (03 Apr 2011)
+
+  03 Apr 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-ffmpeg-build-r1.patch, +chromium-12.0.712.0-r1.ebuild:
+  Update the ffmpeg patch to be more compatible, see bug #361665 comment #3
+  by Mike Gilbert <floppymaster@gmail.com>.
+
+  02 Apr 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-ffmpeg-build-r0.patch, chromium-11.0.696.28.ebuild,
+  chromium-12.0.712.0.ebuild:
+  Backport upstream FFmpeg compatibility patch, bug #355405 by Philipp
+  <sefi@s-e-f-i.de>.
+
+*chromium-11.0.696.28 (01 Apr 2011)
+
+  01 Apr 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-10.0.648.133.ebuild, -chromium-11.0.696.16.ebuild,
+  +chromium-11.0.696.28.ebuild:
+  Version bump for beta channel release. Remove old.
+
+  30 Mar 2011; Alex Alexander <wired@gentoo.org> chromium-9999-r1.ebuild:
+  re-added suffix/slot to the desktop entry, bug #361211
+
+*chromium-11.0.696.25 (29 Mar 2011)
+
+  29 Mar 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-11.0.696.14.ebuild, +chromium-11.0.696.25.ebuild,
+  chromium-12.0.712.0.ebuild, chromium-9999-r1.ebuild:
+  Version bump for beta channel release. Restore check for PaX (bug
+  #301880), handle more MIME types for GNOME (bug #360797 by pacho). Remove
+  old.
 
   26 Mar 2011; Christian Faulhammer <fauli@gentoo.org>
   chromium-10.0.648.204.ebuild:
