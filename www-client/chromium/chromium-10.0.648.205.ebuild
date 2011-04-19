@@ -1,21 +1,21 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-11.0.696.34.ebuild,v 1.2 2011/04/07 06:39:17 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-10.0.648.205.ebuild,v 1.3 2011/04/16 18:58:57 angelos Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
 
-inherit eutils fdo-mime flag-o-matic gnome2-utils multilib pax-utils \
-	portability python toolchain-funcs versionator virtualx
+inherit eutils flag-o-matic multilib pax-utils portability python \
+	toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
+SRC_URI="http://build.chromium.org/buildbot/official/${P}.tar.bz2"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~x86"
-IUSE="cups gnome gnome-keyring"
+KEYWORDS="amd64 ~arm x86"
+IUSE="cups +gecko-mediaplayer gnome gnome-keyring"
 
 RDEPEND="app-arch/bzip2
 	dev-libs/dbus-glib
@@ -34,7 +34,6 @@ RDEPEND="app-arch/bzip2
 	media-libs/speex
 	>=media-video/ffmpeg-0.6_p25767[threads]
 	cups? ( >=net-print/cups-1.3.11 )
-	sys-libs/pam
 	sys-libs/zlib
 	x11-libs/gtk+:2
 	x11-libs/libXScrnSaver
@@ -47,15 +46,8 @@ DEPEND="${RDEPEND}
 	>=sys-devel/make-3.81-r2"
 RDEPEND+="
 	x11-misc/xdg-utils
-	virtual/ttf-fonts"
-
-gyp_use() {
-	if [[ $# -lt 2 ]]; then
-		echo "!!! usage: gyp_use <USEFLAG> <GYPFLAG>" >&2
-		return 1
-	fi
-	if use "$1"; then echo "-D$2=1"; else echo "-D$2=0"; fi
-}
+	virtual/ttf-fonts
+	gecko-mediaplayer? ( !www-plugins/gecko-mediaplayer[gnome] )"
 
 egyp() {
 	set -- build/gyp_chromium --depth=. "${@}"
@@ -97,11 +89,17 @@ pkg_setup() {
 }
 
 src_prepare() {
-	# Make sure we don't use bundled libvpx headers.
-	epatch "${FILESDIR}/${PN}-system-vpx-r3.patch"
+	# Enable optional support for gecko-mediaplayer.
+	epatch "${FILESDIR}"/${PN}-gecko-mediaplayer-r1.patch
 
-	# Backport FFmpeg compatibility patch, bug #355405.
-	epatch "${FILESDIR}/${PN}-ffmpeg-build-r0.patch"
+	# Make sure we don't use bundled libvpx headers.
+	epatch "${FILESDIR}"/${PN}-system-vpx-r2.patch
+
+	# Make sure we don't use bundled FLAC.
+	epatch "${FILESDIR}"/${PN}-system-flac-r0.patch
+
+	# Fix build, http://crbug.com/70606.
+	epatch "${FILESDIR}"/${PN}-webkit-version.patch
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
@@ -116,10 +114,8 @@ src_prepare() {
 		\! -path 'third_party/harfbuzz/*' \
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/iccjpeg/*' \
-		\! -path 'third_party/launchpad_translations/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libsrtp/*' \
-		\! -path 'third_party/libvpx/libvpx.h' \
 		\! -path 'third_party/libwebp/*' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
@@ -135,6 +131,10 @@ src_prepare() {
 		\! -path 'third_party/zlib/contrib/minizip/*' \
 		-delete || die
 
+	# Provide our own gyp file to use system flac.
+	# TODO: move this upstream.
+	cp "${FILESDIR}/flac.gyp" "third_party/flac" || die
+
 	# Make sure the build system will use the right python, bug #344367.
 	# Only convert directories that need it, to save time.
 	python_convert_shebangs -q -r 2 build tools
@@ -149,11 +149,9 @@ src_configure() {
 
 	# Use system-provided libraries.
 	# TODO: use_system_hunspell (upstream changes needed).
-	# TODO: use_system_ssl (http://crbug.com/58087).
-	# TODO: use_system_sqlite (http://crbug.com/22208).
+	# TODO: use_system_ssl (need to consult upstream).
 	myconf+="
 		-Duse_system_bzip2=1
-		-Duse_system_flac=1
 		-Duse_system_ffmpeg=1
 		-Duse_system_icu=1
 		-Duse_system_libevent=1
@@ -165,12 +163,27 @@ src_configure() {
 		-Duse_system_xdg_utils=1
 		-Duse_system_zlib=1"
 
-	# Optional dependencies.
-	myconf+="
-		$(gyp_use cups use_cups)
-		$(gyp_use gnome use_gconf)
-		$(gyp_use gnome-keyring use_gnome_keyring)
-		$(gyp_use gnome-keyring linux_link_gnome_keyring)"
+	# The dependency on cups is optional, see bug #324105.
+	if use cups; then
+		myconf+=" -Duse_cups=1"
+	else
+		myconf+=" -Duse_cups=0"
+	fi
+
+	# Make GConf dependency optional, http://crbug.com/13322.
+	if use gnome; then
+		myconf+=" -Duse_gconf=1"
+	else
+		myconf+=" -Duse_gconf=0"
+	fi
+
+	if use "gnome-keyring"; then
+		myconf+=" -Duse_gnome_keyring=1 -Dlinux_link_gnome_keyring=1"
+	else
+		# TODO: we should also disable code trying to dlopen
+		# gnome-keyring in that case.
+		myconf+=" -Duse_gnome_keyring=0 -Dlinux_link_gnome_keyring=0"
+	fi
 
 	# Enable sandbox.
 	myconf+="
@@ -181,6 +194,14 @@ src_configure() {
 		# Prevent the build from failing (bug #301880). The performance
 		# difference is very small.
 		myconf+=" -Dv8_use_snapshot=0"
+	fi
+
+	if use gecko-mediaplayer; then
+		# Disable hardcoded blacklist for gecko-mediaplayer.
+		# When www-plugins/gecko-mediaplayer is compiled with USE=gnome, it causes
+		# the browser to hang. We can handle the situation via dependencies,
+		# thus making it possible to use gecko-mediaplayer.
+		append-flags -DGENTOO_CHROMIUM_ENABLE_GECKO_MEDIAPLAYER
 	fi
 
 	# Our system ffmpeg should support more codecs than the bundled one
@@ -246,13 +267,7 @@ src_install() {
 	doexe out/Release/chrome
 	doexe out/Release/chrome_sandbox || die
 	fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
-	newexe "${FILESDIR}"/chromium-launcher-r1.sh chromium-launcher.sh || die
-
-	# It is important that we name the target "chromium-browser",
-	# xdg-utils expect it; bug #355517.
-	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium-browser || die
-	# keep the old symlink around for consistency
-	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium || die
+	doexe "${FILESDIR}"/chromium-launcher.sh || die
 
 	insinto "${CHROMIUM_HOME}"
 	doins out/Release/chrome.pak || die
@@ -261,8 +276,9 @@ src_install() {
 	doins -r out/Release/locales || die
 	doins -r out/Release/resources || die
 
+	# chrome.1 is for chromium --help
+	newman out/Release/chrome.1 chrome.1 || die
 	newman out/Release/chrome.1 chromium.1 || die
-	newman out/Release/chrome.1 chromium-browser.1 || die
 
 	# Chromium looks for these in its folder
 	# See media_posix.cc and base_paths_linux.cc
@@ -270,34 +286,22 @@ src_install() {
 	dosym /usr/$(get_libdir)/libavformat.so.52 "${CHROMIUM_HOME}" || die
 	dosym /usr/$(get_libdir)/libavutil.so.50 "${CHROMIUM_HOME}" || die
 
-	# Install icons and desktop entry.
-	for SIZE in 16 22 24 32 48 64 128 256 ; do
-		insinto /usr/share/icons/hicolor/${SIZE}x${SIZE}/apps
-		newins chrome/app/theme/chromium/product_logo_${SIZE}.png \
-			chromium-browser.png || die
-	done
-	local mime_types="text/html;text/xml;application/xhtml+xml;"
-	mime_types+="x-scheme-handler/http;x-scheme-handler/https;" # bug #360797
-	make_desktop_entry chromium-browser "Chromium" chromium-browser \
-		"Network;WebBrowser" "MimeType=${mime_types}"
+	# Install icon and desktop entry.
+	newicon chrome/app/theme/chromium/product_logo_48.png ${PN}-browser.png || die
+	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium || die
+	make_desktop_entry chromium "Chromium" ${PN}-browser "Network;WebBrowser" \
+		"MimeType=text/html;text/xml;application/xhtml+xml;"
 	sed -e "/^Exec/s/$/ %U/" -i "${D}"/usr/share/applications/*.desktop || die
 
 	# Install GNOME default application entry (bug #303100).
 	if use gnome; then
 		dodir /usr/share/gnome-control-center/default-apps || die
 		insinto /usr/share/gnome-control-center/default-apps
-		doins "${FILESDIR}"/chromium-browser.xml || die
+		doins "${FILESDIR}"/chromium.xml || die
 	fi
 }
 
-pkg_preinst() {
-	gnome2_icon_savelist
-}
-
 pkg_postinst() {
-	fdo-mime_desktop_database_update
-	gnome2_icon_cache_update
-
 	# For more info see bug #292201, bug #352263, bug #361859.
 	elog
 	elog "Depending on your desktop environment, you may need"
@@ -322,8 +326,4 @@ pkg_postinst() {
 	elog " - media-fonts/takao-fonts"
 	elog " - media-fonts/wqy-microhei"
 	elog " - media-fonts/wqy-zenhei"
-}
-
-pkg_postrm() {
-	gnome2_icon_cache_update
 }

@@ -1,6 +1,6 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-12.0.712.0-r1.ebuild,v 1.2 2011/04/05 08:38:50 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-11.0.696.50.ebuild,v 1.1 2011/04/19 08:24:42 phajdan.jr Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
@@ -15,7 +15,7 @@ SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="cups gnome gnome-keyring kerberos"
+IUSE="cups gnome gnome-keyring"
 
 RDEPEND="app-arch/bzip2
 	dev-libs/dbus-glib
@@ -44,10 +44,8 @@ DEPEND="${RDEPEND}
 	>=dev-util/gperf-3.0.3
 	>=dev-util/pkgconfig-0.23
 	sys-devel/flex
-	>=sys-devel/make-3.81-r2
-	test? ( dev-python/simplejson dev-python/tlslite virtual/krb5 )"
+	>=sys-devel/make-3.81-r2"
 RDEPEND+="
-	kerberos? ( virtual/krb5 )
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
 
@@ -100,13 +98,10 @@ pkg_setup() {
 
 src_prepare() {
 	# Make sure we don't use bundled libvpx headers.
-	epatch "${FILESDIR}/${PN}-system-vpx-r4.patch"
+	epatch "${FILESDIR}/${PN}-system-vpx-r3.patch"
 
 	# Backport FFmpeg compatibility patch, bug #355405.
-	epatch "${FILESDIR}/${PN}-ffmpeg-build-r1.patch"
-
-	# Make Chromium recognize Gentoo's Heimdal, to be upstreamed.
-	epatch "${FILESDIR}/${PN}-gssapi-heimdal-r0.patch"
+	epatch "${FILESDIR}/${PN}-ffmpeg-build-r0.patch"
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
@@ -122,7 +117,6 @@ src_prepare() {
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/iccjpeg/*' \
 		\! -path 'third_party/launchpad_translations/*' \
-		\! -path 'third_party/leveldb/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libvpx/libvpx.h' \
@@ -133,7 +127,6 @@ src_prepare() {
 		\! -path 'third_party/openmax/*' \
 		\! -path 'third_party/ots/*' \
 		\! -path 'third_party/protobuf/*' \
-		\! -path 'third_party/pyftpdlib/*' \
 		\! -path 'third_party/skia/*' \
 		\! -path 'third_party/speex/speex.h' \
 		\! -path 'third_party/sqlite/*' \
@@ -194,18 +187,9 @@ src_configure() {
 	# for Chromium.
 	myconf+=" -Dproprietary_codecs=1"
 
-	# Use target arch detection logic from bug #354601.
-	case ${CHOST} in
-		i?86-*) myarch=x86 ;;
-		x86_64-*)
-			if [[ $ABI = "" ]] ; then
-				myarch=amd64
-			else
-				myarch="$ABI"
-			fi ;;
-		arm*-*) myarch=arm ;;
-		*) die "Unrecognized CHOST: ${CHOST}"
-	esac
+	# Use target arch detection logic from bug #296917.
+	local myarch="$ABI"
+	[[ $myarch = "" ]] && myarch="$ARCH"
 
 	if [[ $myarch = amd64 ]] ; then
 		myconf+=" -Dtarget_arch=x64"
@@ -236,8 +220,8 @@ src_compile() {
 	emake chrome chrome_sandbox BUILDTYPE=Release V=1 || die
 	pax-mark m out/Release/chrome
 	if use test; then
-		emake {base,net}_unittests BUILDTYPE=Release V=1 || die
-		pax-mark m out/Release/{base,net}_unittests
+		emake base_unittests BUILDTYPE=Release V=1 || die
+		pax-mark m out/Release/base_unittests
 	fi
 }
 
@@ -255,13 +239,6 @@ src_test() {
 	# For more info see bug #350347.
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/base_unittests virtualmake \
 		'--gtest_filter=-ICUStringConversionsTest.*'
-
-	# DiskCache: we need net/data/cache_tests in the tarball (export_tarball.py)
-	# NetUtilTest: bug #361885.
-	# HTTPS/SSL: bug #361939.
-	# UDP: unstable, active development. We should revisit this later.
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/net_unittests virtualmake \
-		'--gtest_filter=-*DiskCache*:NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:*HTTPS*:*SSL*:*UDP*'
 }
 
 src_install() {
@@ -321,7 +298,8 @@ pkg_postinst() {
 	fdo-mime_desktop_database_update
 	gnome2_icon_cache_update
 
-	# For more info see bugs #292201 and bug #352263.
+	# For more info see bug #292201, bug #352263, bug #361859.
+	elog
 	elog "Depending on your desktop environment, you may need"
 	elog "to install additional packages to get icons on the Downloads page."
 	elog
@@ -329,7 +307,21 @@ pkg_postinst() {
 	elog
 	elog "For other desktop environments, try one of the following:"
 	elog " - x11-themes/gnome-icon-theme"
-	elog " - x11-themes/xfce4-icon-theme"
+	elog " - x11-themes/tango-icon-theme"
+
+	# For more info see bug #359153.
+	elog
+	elog "Some web pages may require additional fonts to display properly."
+	elog "Try installing some of the following packages if some characters"
+	elog "are not displayed properly:"
+	elog " - media-fonts/arphicfonts"
+	elog " - media-fonts/bitstream-cyberbit"
+	elog " - media-fonts/droid"
+	elog " - media-fonts/ipamonafont"
+	elog " - media-fonts/ja-ipafonts"
+	elog " - media-fonts/takao-fonts"
+	elog " - media-fonts/wqy-microhei"
+	elog " - media-fonts/wqy-zenhei"
 }
 
 pkg_postrm() {
