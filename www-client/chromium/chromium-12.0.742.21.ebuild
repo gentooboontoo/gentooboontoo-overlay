@@ -1,6 +1,6 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-12.0.742.12.ebuild,v 1.1 2011/04/29 08:44:55 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-12.0.742.21.ebuild,v 1.3 2011/05/09 16:39:13 phajdan.jr Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
@@ -14,7 +14,7 @@ SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="cups gnome gnome-keyring kerberos xinerama"
 
 RDEPEND="app-arch/bzip2
@@ -47,7 +47,11 @@ DEPEND="${RDEPEND}
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
 	x11-libs/libXinerama
-	test? ( dev-python/simplejson virtual/krb5 )"
+	test? (
+		dev-python/pyftpdlib
+		dev-python/simplejson
+		virtual/krb5
+	)"
 RDEPEND+="
 	kerberos? ( virtual/krb5 )
 	xinerama? ( x11-libs/libXinerama )
@@ -142,7 +146,6 @@ src_prepare() {
 		\! -path 'third_party/openmax/*' \
 		\! -path 'third_party/ots/*' \
 		\! -path 'third_party/protobuf/*' \
-		\! -path 'third_party/pyftpdlib/*' \
 		\! -path 'third_party/skia/*' \
 		\! -path 'third_party/speex/speex.h' \
 		\! -path 'third_party/sqlite/*' \
