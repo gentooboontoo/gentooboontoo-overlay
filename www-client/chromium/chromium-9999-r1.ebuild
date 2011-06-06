@@ -1,6 +1,6 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.26 2011/05/11 14:55:16 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.31 2011/06/02 18:40:41 phajdan.jr Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
@@ -17,6 +17,14 @@ LICENSE="BSD"
 SLOT="live"
 KEYWORDS=""
 IUSE="cups gnome gnome-keyring kerberos xinerama"
+
+# en_US is ommitted on purpose from the list below. It must always be available.
+LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he hi hr
+hu id it ja kn ko lt lv ml mr nb nl pl pt_BR pt_PT ro ru sk sl sr sv sw ta te th
+tr uk vi zh_CN zh_TW"
+for lang in ${LANGS}; do
+	IUSE+=" linguas_${lang}"
+done
 
 RDEPEND="app-arch/bzip2
 	dev-libs/dbus-glib
@@ -35,7 +43,6 @@ RDEPEND="app-arch/bzip2
 	>=media-libs/libwebp-0.1.2
 	media-libs/speex
 	cups? ( >=net-print/cups-1.3.11 )
-	sys-libs/pam
 	sys-libs/zlib
 	>=virtual/ffmpeg-0.6.90[threads]
 	x11-libs/gtk+:2
@@ -100,6 +107,16 @@ egyp() {
 	"${@}"
 }
 
+# Chromium uses different names for some langs,
+# return Chromium name corresponding to a Gentoo lang.
+chromium_lang() {
+	if [[ "$1" == "es_LA" ]]; then
+		echo "es_419"
+	else
+		echo "$1"
+	fi
+}
+
 pkg_setup() {
 	SUFFIX="-${SLOT}"
 	CHROMIUM_HOME="/usr/$(get_libdir)/chromium-browser${SUFFIX}"
@@ -110,19 +127,6 @@ pkg_setup() {
 	# Make sure the build system will use the right python, bug #344367.
 	python_set_active_version 2
 	python_pkg_setup
-
-	# Prevent user problems like bug #299777.
-	if ! grep -q /dev/shm <<< $(get_mounts); then
-		ewarn "You don't have tmpfs mounted at /dev/shm."
-		ewarn "${PN} may fail to start in that configuration."
-		ewarn "Please uncomment the /dev/shm entry in /etc/fstab,"
-		ewarn "and run 'mount /dev/shm'."
-	fi
-	if [ `stat -c %a /dev/shm` -ne 1777 ]; then
-		ewarn "/dev/shm does not have correct permissions."
-		ewarn "${PN} may fail to start in that configuration."
-		ewarn "Please run 'chmod 1777 /dev/shm'."
-	fi
 
 	# Prevent user problems like bug #348235.
 	eshopts_push -s extglob
@@ -136,8 +140,6 @@ pkg_setup() {
 	# Warn if the kernel doesn't support features useful for sandboxing,
 	# bug #363907.
 	CONFIG_CHECK="~PID_NS ~NET_NS"
-	PID_NS_WARNING="PID (process id) namespaces are needed for sandboxing."
-	NET_NS_WARNING="Network namespaces are needed for sandboxing."
 	check_extra_config
 }
 
@@ -162,7 +164,6 @@ src_prepare() {
 		\! -path 'third_party/leveldb/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
-		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libvpx/libvpx.h' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
@@ -232,19 +233,7 @@ src_configure() {
 	# for Chromium.
 	myconf+=" -Dproprietary_codecs=1"
 
-	# Use target arch detection logic from bug #354601.
-	case ${CHOST} in
-		i?86-*) myarch=x86 ;;
-		x86_64-*)
-			if [[ $ABI = "" ]] ; then
-				myarch=amd64
-			else
-				myarch="$ABI"
-			fi ;;
-		arm*-*) myarch=arm ;;
-		*) die "Unrecognized CHOST: ${CHOST}"
-	esac
-
+	local myarch="$(tc-arch)"
 	if [[ $myarch = amd64 ]] ; then
 		myconf+=" -Dtarget_arch=x64"
 	elif [[ $myarch = x86 ]] ; then
@@ -308,7 +297,11 @@ src_install() {
 	doexe out/Release/chrome
 	doexe out/Release/chrome_sandbox || die
 	fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
-	newexe "${FILESDIR}"/chromium-launcher-r1.sh chromium-launcher.sh || die
+
+	insinto "${CHROMIUM_HOME}"
+	doins out/Release/libppGoogleNaClPluginChrome.so || die
+
+	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
 	sed "s:chromium-browser:chromium-browser${SUFFIX}:g" \
 		-i "${D}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
 	sed "s:chromium.desktop:chromium${SUFFIX}.desktop:g" \
@@ -321,6 +314,49 @@ src_install() {
 	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium-browser${SUFFIX} || die
 	# keep the old symlink around for consistency
 	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium${SUFFIX} || die
+
+	# Allow users to override command-line options, bug #357629.
+	dodir /etc/chromium || die
+	insinto /etc/chromium
+	newins "${FILESDIR}/chromium.default" "default" || die
+
+	# Support LINGUAS, bug #332751.
+	local pak
+	for pak in out/Release/locales/*.pak; do
+		local pakbasename="$(basename ${pak})"
+		local pakname="${pakbasename%.pak}"
+		local langname="${pakname//-/_}"
+
+		# Do not issue warning for en_US locale. This is the fallback
+		# locale so it should always be installed.
+		if [[ "${langname}" == "en_US" ]]; then
+			continue
+		fi
+
+		local found=false
+		local lang
+		for lang in ${LANGS}; do
+			local crlang="$(chromium_lang ${lang})"
+			if [[ "${langname}" == "${crlang}" ]]; then
+				found=true
+				break
+			fi
+		done
+		if ! $found; then
+			ewarn "LINGUAS warning: no ${langname} in LANGS"
+		fi
+	done
+	local lang
+	for lang in ${LANGS}; do
+		local crlang="$(chromium_lang ${lang})"
+		local pakfile="out/Release/locales/${crlang//_/-}.pak"
+		if [ ! -f "${pakfile}" ]; then
+			ewarn "LINGUAS warning: no .pak file for ${lang} (${pakfile} not found)"
+		fi
+		if ! use linguas_${lang}; then
+			rm "${pakfile}" || die
+		fi
+	done
 
 	insinto "${CHROMIUM_HOME}"
 	doins out/Release/chrome.pak || die
