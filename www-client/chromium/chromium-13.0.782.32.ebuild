@@ -1,6 +1,6 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-13.0.772.0-r1.ebuild,v 1.2 2011/05/29 15:08:06 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-13.0.782.32.ebuild,v 1.1 2011/06/23 17:43:51 phajdan.jr Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
@@ -14,7 +14,7 @@ SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="cups gnome gnome-keyring kerberos xinerama"
 
 # en_US is ommitted on purpose from the list below. It must always be available.
@@ -43,12 +43,12 @@ RDEPEND="app-arch/bzip2
 	media-libs/speex
 	cups? ( >=net-print/cups-1.3.11 )
 	sys-libs/zlib
-	>=virtual/ffmpeg-0.6.90[threads]
 	x11-libs/gtk+:2
 	x11-libs/libXScrnSaver
 	x11-libs/libXtst"
 DEPEND="${RDEPEND}
 	dev-lang/perl
+	dev-lang/yasm
 	>=dev-util/gperf-3.0.3
 	>=dev-util/pkgconfig-0.23
 	sys-devel/flex
@@ -99,19 +99,6 @@ pkg_setup() {
 	python_set_active_version 2
 	python_pkg_setup
 
-	# Prevent user problems like bug #299777.
-	if ! grep -q /dev/shm <<< $(get_mounts); then
-		ewarn "You don't have tmpfs mounted at /dev/shm."
-		ewarn "${PN} may fail to start in that configuration."
-		ewarn "Please uncomment the /dev/shm entry in /etc/fstab,"
-		ewarn "and run 'mount /dev/shm'."
-	fi
-	if [ `stat -c %a /dev/shm` -ne 1777 ]; then
-		ewarn "/dev/shm does not have correct permissions."
-		ewarn "${PN} may fail to start in that configuration."
-		ewarn "Please run 'chmod 1777 /dev/shm'."
-	fi
-
 	# Prevent user problems like bug #348235.
 	eshopts_push -s extglob
 	if is-flagq '-g?(gdb)?([1-9])'; then
@@ -124,14 +111,18 @@ pkg_setup() {
 	# Warn if the kernel doesn't support features useful for sandboxing,
 	# bug #363907.
 	CONFIG_CHECK="~PID_NS ~NET_NS"
-	PID_NS_WARNING="PID (process id) namespaces are needed for sandboxing."
-	NET_NS_WARNING="Network namespaces are needed for sandboxing."
 	check_extra_config
 }
 
 src_prepare() {
 	# Make sure we don't use bundled libvpx headers.
 	epatch "${FILESDIR}/${PN}-system-vpx-r4.patch"
+
+	# Backport build fix for perl-5.14, bug #372301.
+	epatch "${FILESDIR}/${PN}-perl-5.14-r0.patch"
+
+	# Backport build fix for glibc-2.14, bug #372495.
+	epatch "${FILESDIR}/${PN}-glibc-2.14-r0.patch"
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
@@ -150,7 +141,6 @@ src_prepare() {
 		\! -path 'third_party/leveldb/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
-		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libvpx/libvpx.h' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
@@ -179,17 +169,14 @@ src_configure() {
 	# additions, bug #336871.
 	myconf+=" -Ddisable_sse2=1"
 
-	# Temporarily disable Native Client, bug #366413.
-	myconf+=" -Ddisable_nacl=1"
-
 	# Use system-provided libraries.
+	# TODO: use_system_ffmpeg (bug #71931). That makes yasm unneeded.
 	# TODO: use_system_hunspell (upstream changes needed).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
-		-Duse_system_ffmpeg=1
 		-Duse_system_icu=1
 		-Duse_system_libevent=1
 		-Duse_system_libjpeg=1
@@ -199,6 +186,7 @@ src_configure() {
 		-Duse_system_speex=1
 		-Duse_system_vpx=1
 		-Duse_system_xdg_utils=1
+		-Duse_system_yasm=1
 		-Duse_system_zlib=1"
 
 	# Optional dependencies.
@@ -221,21 +209,10 @@ src_configure() {
 
 	# Our system ffmpeg should support more codecs than the bundled one
 	# for Chromium.
-	myconf+=" -Dproprietary_codecs=1"
+	# TODO: uncomment when bug #371931 is fixed.
+	# myconf+=" -Dproprietary_codecs=1"
 
-	# Use target arch detection logic from bug #354601.
-	case ${CHOST} in
-		i?86-*) myarch=x86 ;;
-		x86_64-*)
-			if [[ $ABI = "" ]] ; then
-				myarch=amd64
-			else
-				myarch="$ABI"
-			fi ;;
-		arm*-*) myarch=arm ;;
-		*) die "Unrecognized CHOST: ${CHOST}"
-	esac
-
+	local myarch="$(tc-arch)"
 	if [[ $myarch = amd64 ]] ; then
 		myconf+=" -Dtarget_arch=x64"
 	elif [[ $myarch = x86 ]] ; then
@@ -281,6 +258,11 @@ src_test() {
 		die "locale ${mylocale} is not supported"
 	fi
 
+	# For more info see bug #370957.
+	if [[ $UID -eq 0 ]]; then
+		die "Tests must be run as non-root. Please use FEATURES=userpriv."
+	fi
+
 	# For more info see bug #350347.
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/base_unittests virtualmake \
 		'--gtest_filter=-ICUStringConversionsTest.*'
@@ -299,6 +281,10 @@ src_install() {
 	doexe out/Release/chrome
 	doexe out/Release/chrome_sandbox || die
 	fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
+
+	insinto "${CHROMIUM_HOME}"
+	doins out/Release/libppGoogleNaClPluginChrome.so || die
+
 	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
 
 	# It is important that we name the target "chromium-browser",
@@ -362,9 +348,12 @@ src_install() {
 
 	# Chromium looks for these in its folder
 	# See media_posix.cc and base_paths_linux.cc
-	dosym /usr/$(get_libdir)/libavcodec.so.52 "${CHROMIUM_HOME}" || die
-	dosym /usr/$(get_libdir)/libavformat.so.52 "${CHROMIUM_HOME}" || die
-	dosym /usr/$(get_libdir)/libavutil.so.50 "${CHROMIUM_HOME}" || die
+	# TODO: uncomment when bug #371931 is fixed.
+	#dosym /usr/$(get_libdir)/libavcodec.so.52 "${CHROMIUM_HOME}" || die
+	#dosym /usr/$(get_libdir)/libavformat.so.52 "${CHROMIUM_HOME}" || die
+	#dosym /usr/$(get_libdir)/libavutil.so.50 "${CHROMIUM_HOME}" || die
+	doexe out/Release/ffmpegsumo_nolink || die
+	doexe out/Release/libffmpegsumo.so || die
 
 	# Install icons and desktop entry.
 	for SIZE in 16 22 24 32 48 64 128 256 ; do

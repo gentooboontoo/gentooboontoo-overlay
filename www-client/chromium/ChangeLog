@@ -1,6 +1,94 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.376 2011/06/03 08:01:20 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.390 2011/06/24 13:29:03 phajdan.jr Exp $
+
+  24 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org> files/chromium.xml:
+  Use chromium-browser instead of chromium for GNOME default applications file.
+  chromium is now there only for compatibility.
+
+*chromium-13.0.782.32 (23 Jun 2011)
+
+  23 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-glibc-2.14-r0.patch, files/chromium-perl-5.14-r0.patch,
+  +chromium-13.0.782.32.ebuild:
+  Version bump for beta channel release. Fix a problem with perl patch (bug
+  #372627 by Richard Cox). Fix build failure with glibc-2.14 (bug #372495 by
+  Chris Smith).
+
+*chromium-14.0.797.0 (21 Jun 2011)
+
+  21 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-14.0.797.0.ebuild:
+  Version bump for dev channel release.
+
+*chromium-12.0.742.91-r2 (21 Jun 2011)
+
+  21 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-perl-5.14-r0.patch, +chromium-12.0.742.91-r2.ebuild,
+  -chromium-13.0.782.24.ebuild, chromium-13.0.782.24-r1.ebuild,
+  chromium-14.0.794.0.ebuild:
+  Backport perl-5.14 compile fix, bug #372301 by Markus Peloquin
+  <markus@cs.wisc.edu>.
+
+*chromium-14.0.794.0 (18 Jun 2011)
+
+  18 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-11.0.696.71.ebuild, -chromium-12.0.742.91.ebuild,
+  +chromium-14.0.794.0.ebuild:
+  Version bump for dev channel release. Remove old.
+
+  18 Jun 2011; Markos Chandras <hwoarang@gentoo.org>
+  chromium-12.0.742.91-r1.ebuild:
+  Stable on amd64 wrt bug #370481
+
+  17 Jun 2011; Thomas Kahle <tomka@gentoo.org> chromium-12.0.742.91-r1.ebuild:
+  x86 stable per bug 370481
+
+*chromium-13.0.782.24-r1 (17 Jun 2011)
+*chromium-12.0.742.91-r1 (17 Jun 2011)
+
+  17 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-12.0.742.77.ebuild, +chromium-12.0.742.91-r1.ebuild,
+  -chromium-13.0.782.20.ebuild, +chromium-13.0.782.24-r1.ebuild,
+  chromium-9999-r1.ebuild:
+  Switch back to bundled ffmpeg because of crashes, bug #371931 by Ambroz
+  Bizjak <ambrop7@gmail.com>. Drop ~arm because of yasm dependency. Remove old.
+
+*chromium-13.0.782.24 (16 Jun 2011)
+
+  16 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-13.0.782.15.ebuild, +chromium-13.0.782.24.ebuild:
+  Version bump for dev channel release. Remove old.
+
+*chromium-13.0.782.20 (14 Jun 2011)
+
+  14 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-13.0.782.13.ebuild, +chromium-13.0.782.20.ebuild:
+  Version bump for dev channel release. Remove old.
+
+  10 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-12.0.742.91.ebuild, chromium-13.0.782.15.ebuild,
+  chromium-9999-r1.ebuild:
+  Die if src_test is run as root, the tests fail in that case; bug #370957 by
+  tampakrap.
+
+*chromium-13.0.782.15 (10 Jun 2011)
+
+  10 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-13.0.782.1.ebuild, +chromium-13.0.782.15.ebuild:
+  Version bump for dev channel release. Remove old.
+
+*chromium-13.0.782.13 (09 Jun 2011)
+
+  09 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-13.0.772.0-r1.ebuild, +chromium-13.0.782.13.ebuild:
+  Version bump for dev channel release. Remove old.
+
+*chromium-12.0.742.91 (07 Jun 2011)
+
+  07 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-12.0.742.68.ebuild, +chromium-12.0.742.91.ebuild:
+  Version bump for beta channel release. Remove old.
 
 *chromium-12.0.742.77 (03 Jun 2011)
 
