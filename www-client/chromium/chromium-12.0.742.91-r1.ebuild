@@ -1,30 +1,21 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.33 2011/06/17 15:10:48 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-12.0.742.91-r1.ebuild,v 1.3 2011/06/18 07:48:15 hwoarang Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
 
 inherit eutils fdo-mime flag-o-matic gnome2-utils linux-info multilib \
-	pax-utils portability python subversion toolchain-funcs versionator virtualx
+	pax-utils portability python toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-# subversion eclass fetches gclient, which will then fetch chromium itself
-ESVN_REPO_URI="http://src.chromium.org/svn/trunk/tools/depot_tools"
+SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
 
 LICENSE="BSD"
-SLOT="live"
-KEYWORDS=""
+SLOT="0"
+KEYWORDS="amd64 x86"
 IUSE="cups gnome gnome-keyring kerberos xinerama"
-
-# en_US is ommitted on purpose from the list below. It must always be available.
-LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he hi hr
-hu id it ja kn ko lt lv ml mr nb nl pl pt_BR pt_PT ro ru sk sl sr sv sw ta te th
-tr uk vi zh_CN zh_TW"
-for lang in ${LANGS}; do
-	IUSE+=" linguas_${lang}"
-done
 
 RDEPEND="app-arch/bzip2
 	dev-libs/dbus-glib
@@ -43,6 +34,7 @@ RDEPEND="app-arch/bzip2
 	>=media-libs/libwebp-0.1.2
 	media-libs/speex
 	cups? ( >=net-print/cups-1.3.11 )
+	sys-libs/pam
 	sys-libs/zlib
 	x11-libs/gtk+:2
 	x11-libs/libXScrnSaver
@@ -61,37 +53,10 @@ DEPEND="${RDEPEND}
 		virtual/krb5
 	)"
 RDEPEND+="
-	!=www-client/chromium-9999
 	kerberos? ( virtual/krb5 )
 	xinerama? ( x11-libs/libXinerama )
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
-
-src_unpack() {
-	subversion_src_unpack
-	mv "${S}" "${WORKDIR}"/depot_tools || die
-
-	mkdir -p "${ESVN_STORE_DIR}/${PN}" || die
-	cd "${ESVN_STORE_DIR}/${PN}" || die
-
-	einfo "gclient config -->"
-	cp -f "${FILESDIR}/dot-gclient" .gclient || die
-	cat .gclient || die
-
-	einfo "gclient sync start -->"
-	"${WORKDIR}/depot_tools/gclient" sync --force --nohooks || die
-	"$(PYTHON)" src/build/download_nacl_irt.py || die  # bug #366413
-	einfo "   working copy: ${ESVN_STORE_DIR}/${PN}"
-
-	mkdir -p "${S}" || die
-	rsync -rlpgo --exclude=".svn/" src/ "${S}" || die
-
-	# Display correct svn revision in about box, and log new version.
-	CREV=$(subversion__svn_info "src" "Revision")
-	echo ${CREV} > "${S}"/build/LASTCHANGE.in || die
-	. src/chrome/VERSION
-	elog "Installing/updating to version ${MAJOR}.${MINOR}.${BUILD}.${PATCH} (Developer Build ${CREV})"
-}
 
 gyp_use() {
 	if [[ $# -lt 2 ]]; then
@@ -107,19 +72,8 @@ egyp() {
 	"${@}"
 }
 
-# Chromium uses different names for some langs,
-# return Chromium name corresponding to a Gentoo lang.
-chromium_lang() {
-	if [[ "$1" == "es_LA" ]]; then
-		echo "es_419"
-	else
-		echo "$1"
-	fi
-}
-
 pkg_setup() {
-	SUFFIX="-${SLOT}"
-	CHROMIUM_HOME="/usr/$(get_libdir)/chromium-browser${SUFFIX}"
+	CHROMIUM_HOME="/usr/$(get_libdir)/chromium-browser"
 
 	# Make sure the build system will use the right tools, bug #340795.
 	tc-export AR CC CXX RANLIB
@@ -127,6 +81,19 @@ pkg_setup() {
 	# Make sure the build system will use the right python, bug #344367.
 	python_set_active_version 2
 	python_pkg_setup
+
+	# Prevent user problems like bug #299777.
+	if ! grep -q /dev/shm <<< $(get_mounts); then
+		ewarn "You don't have tmpfs mounted at /dev/shm."
+		ewarn "${PN} may fail to start in that configuration."
+		ewarn "Please uncomment the /dev/shm entry in /etc/fstab,"
+		ewarn "and run 'mount /dev/shm'."
+	fi
+	if [ `stat -c %a /dev/shm` -ne 1777 ]; then
+		ewarn "/dev/shm does not have correct permissions."
+		ewarn "${PN} may fail to start in that configuration."
+		ewarn "Please run 'chmod 1777 /dev/shm'."
+	fi
 
 	# Prevent user problems like bug #348235.
 	eshopts_push -s extglob
@@ -140,12 +107,20 @@ pkg_setup() {
 	# Warn if the kernel doesn't support features useful for sandboxing,
 	# bug #363907.
 	CONFIG_CHECK="~PID_NS ~NET_NS"
+	PID_NS_WARNING="PID (process id) namespaces are needed for sandboxing."
+	NET_NS_WARNING="Network namespaces are needed for sandboxing."
 	check_extra_config
 }
 
 src_prepare() {
 	# Make sure we don't use bundled libvpx headers.
 	epatch "${FILESDIR}/${PN}-system-vpx-r4.patch"
+
+	# Fix compilation with system zlib, bug #364205. To be upstreamed.
+	epatch "${FILESDIR}/${PN}-system-zlib-r0.patch"
+
+	# Fix compilation without CUPS, bug #364525. To be upstreamed.
+	epatch "${FILESDIR}/${PN}-cups-r0.patch"
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
@@ -163,7 +138,7 @@ src_prepare() {
 		\! -path 'third_party/launchpad_translations/*' \
 		\! -path 'third_party/leveldb/*' \
 		\! -path 'third_party/libjingle/*' \
-		\! -path 'third_party/libphonenumber/*' \
+		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libvpx/libvpx.h' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
@@ -235,7 +210,19 @@ src_configure() {
 	# TODO: uncomment when bug #371931 is fixed.
 	# myconf+=" -Dproprietary_codecs=1"
 
-	local myarch="$(tc-arch)"
+	# Use target arch detection logic from bug #354601.
+	case ${CHOST} in
+		i?86-*) myarch=x86 ;;
+		x86_64-*)
+			if [[ $ABI = "" ]] ; then
+				myarch=amd64
+			else
+				myarch="$ABI"
+			fi ;;
+		arm*-*) myarch=arm ;;
+		*) die "Unrecognized CHOST: ${CHOST}"
+	esac
+
 	if [[ $myarch = amd64 ]] ; then
 		myconf+=" -Dtarget_arch=x64"
 	elif [[ $myarch = x86 ]] ; then
@@ -304,66 +291,13 @@ src_install() {
 	doexe out/Release/chrome
 	doexe out/Release/chrome_sandbox || die
 	fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
-
-	insinto "${CHROMIUM_HOME}"
-	doins out/Release/libppGoogleNaClPluginChrome.so || die
-
-	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
-	sed "s:chromium-browser:chromium-browser${SUFFIX}:g" \
-		-i "${D}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
-	sed "s:chromium.desktop:chromium${SUFFIX}.desktop:g" \
-		-i "${D}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
-	sed "s:plugins:plugins --user-data-dir=\${HOME}/.config/chromium${SUFFIX}:" \
-		-i "${D}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
+	newexe "${FILESDIR}"/chromium-launcher-r1.sh chromium-launcher.sh || die
 
 	# It is important that we name the target "chromium-browser",
 	# xdg-utils expect it; bug #355517.
-	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium-browser${SUFFIX} || die
+	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium-browser || die
 	# keep the old symlink around for consistency
-	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium${SUFFIX} || die
-
-	# Allow users to override command-line options, bug #357629.
-	dodir /etc/chromium || die
-	insinto /etc/chromium
-	newins "${FILESDIR}/chromium.default" "default" || die
-
-	# Support LINGUAS, bug #332751.
-	local pak
-	for pak in out/Release/locales/*.pak; do
-		local pakbasename="$(basename ${pak})"
-		local pakname="${pakbasename%.pak}"
-		local langname="${pakname//-/_}"
-
-		# Do not issue warning for en_US locale. This is the fallback
-		# locale so it should always be installed.
-		if [[ "${langname}" == "en_US" ]]; then
-			continue
-		fi
-
-		local found=false
-		local lang
-		for lang in ${LANGS}; do
-			local crlang="$(chromium_lang ${lang})"
-			if [[ "${langname}" == "${crlang}" ]]; then
-				found=true
-				break
-			fi
-		done
-		if ! $found; then
-			ewarn "LINGUAS warning: no ${langname} in LANGS"
-		fi
-	done
-	local lang
-	for lang in ${LANGS}; do
-		local crlang="$(chromium_lang ${lang})"
-		local pakfile="out/Release/locales/${crlang//_/-}.pak"
-		if [ ! -f "${pakfile}" ]; then
-			ewarn "LINGUAS warning: no .pak file for ${lang} (${pakfile} not found)"
-		fi
-		if ! use linguas_${lang}; then
-			rm "${pakfile}" || die
-		fi
-	done
+	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium || die
 
 	insinto "${CHROMIUM_HOME}"
 	doins out/Release/chrome.pak || die
@@ -372,8 +306,8 @@ src_install() {
 	doins -r out/Release/locales || die
 	doins -r out/Release/resources || die
 
-	newman out/Release/chrome.1 chromium${SUFFIX}.1 || die
-	newman out/Release/chrome.1 chromium-browser${SUFFIX}.1 || die
+	newman out/Release/chrome.1 chromium.1 || die
+	newman out/Release/chrome.1 chromium-browser.1 || die
 
 	# Chromium looks for these in its folder
 	# See media_posix.cc and base_paths_linux.cc
@@ -388,11 +322,11 @@ src_install() {
 	for SIZE in 16 22 24 32 48 64 128 256 ; do
 		insinto /usr/share/icons/hicolor/${SIZE}x${SIZE}/apps
 		newins chrome/app/theme/chromium/product_logo_${SIZE}.png \
-			chromium-browser${SUFFIX}.png || die
+			chromium-browser.png || die
 	done
 	local mime_types="text/html;text/xml;application/xhtml+xml;"
 	mime_types+="x-scheme-handler/http;x-scheme-handler/https;" # bug #360797
-	make_desktop_entry chromium-browser${SUFFIX} "Chromium ${SLOT}" chromium-browser${SUFFIX} \
+	make_desktop_entry chromium-browser "Chromium" chromium-browser \
 		"Network;WebBrowser" "MimeType=${mime_types}"
 	sed -e "/^Exec/s/$/ %U/" -i "${D}"/usr/share/applications/*.desktop || die
 
@@ -400,9 +334,7 @@ src_install() {
 	if use gnome; then
 		dodir /usr/share/gnome-control-center/default-apps || die
 		insinto /usr/share/gnome-control-center/default-apps
-		newins "${FILESDIR}"/chromium-browser.xml chromium-browser${SUFFIX}.xml || die
-		sed "s:chromium-browser:chromium-browser${SUFFIX}:g" -i \
-			"${D}"/usr/share/gnome-control-center/default-apps/chromium-browser${SUFFIX}.xml
+		doins "${FILESDIR}"/chromium-browser.xml || die
 	fi
 }
 
@@ -438,16 +370,6 @@ pkg_postinst() {
 	elog " - media-fonts/takao-fonts"
 	elog " - media-fonts/wqy-microhei"
 	elog " - media-fonts/wqy-zenhei"
-
-	elog
-	elog "The live ebuild of chromium is now in its own slot."
-	elog "This means that you can have it installed alongside a versioned"
-	elog "release and it has its own configuration folder, located at"
-	elog "	\${HOME}/.config/chromium-live"
-	elog "If you want to use any existing, old configuration, you'll have to"
-	elog "rename the old config directory *before* launching chromium-live:"
-	elog "	mv \${HOME}/.config/chromium \${HOME}/.config/chromium-live"
-	elog "To run, execute chromium-live or chromium-browser-live."
 }
 
 pkg_postrm() {
