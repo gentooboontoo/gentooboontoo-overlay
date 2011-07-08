@@ -1,6 +1,35 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.390 2011/06/24 13:29:03 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.396 2011/06/30 11:57:36 tomka Exp $
+
+  30 Jun 2011; Thomas Kahle <tomka@gentoo.org> chromium-12.0.742.112.ebuild:
+  x86 stable per bug 373451
+
+*chromium-13.0.782.41 (30 Jun 2011)
+
+  30 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-13.0.782.24-r1.ebuild, +chromium-13.0.782.41.ebuild:
+  Version bump for beta channel release. Remove old.
+
+  29 Jun 2011; Christoph Mende <angelos@gentoo.org>
+  chromium-12.0.742.112.ebuild:
+  Stable on amd64 wrt bug #373451
+
+*chromium-12.0.742.112 (29 Jun 2011)
+
+  29 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-12.0.742.91-r2.ebuild, +chromium-12.0.742.112.ebuild:
+  Version bump for stable channel release. Remove old.
+
+*chromium-14.0.803.0 (28 Jun 2011)
+
+  28 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-14.0.794.0.ebuild, +chromium-14.0.803.0.ebuild:
+  Version bump for dev channel release. Remove old.
+
+  28 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-libgcrypt-r0.patch, chromium-13.0.782.32.ebuild:
+  Fix build without libgcrypt, bug #373079 by nzqr.
 
   24 Jun 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org> files/chromium.xml:
   Use chromium-browser instead of chromium for GNOME default applications file.
