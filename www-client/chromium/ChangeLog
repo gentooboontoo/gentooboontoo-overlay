@@ -1,6 +1,45 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.405 2011/07/21 03:07:43 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.411 2011/08/07 15:19:55 maekke Exp $
+
+  07 Aug 2011; Markus Meier <maekke@gentoo.org> chromium-13.0.782.107.ebuild:
+  x86 stable, bug #377475
+
+*chromium-14.0.835.18 (05 Aug 2011)
+
+  05 Aug 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-14.0.825.0-r1.ebuild, +chromium-14.0.835.18.ebuild:
+  Version bump for dev channel release. Remove old.
+
+*chromium-13.0.782.109 (05 Aug 2011)
+*chromium-13.0.782.107-r1 (05 Aug 2011)
+
+  05 Aug 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-13.0.782.99.ebuild, +chromium-13.0.782.107-r1.ebuild,
+  +chromium-13.0.782.109.ebuild, -chromium-14.0.825.0.ebuild,
+  chromium-14.0.835.15.ebuild, chromium-9999-r1.ebuild:
+  Version bump for beta channel release. Fix a misgenerated desktop entry.
+  Remove old.
+
+*chromium-14.0.835.15 (04 Aug 2011)
+
+  04 Aug 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-system-libevent-r0.patch, +chromium-14.0.835.15.ebuild,
+  chromium-9999-r1.ebuild:
+  Version bump for dev channel release. Fixes bug #375759 by Mathieu Zhang, bug
+  #375827 by fkhp, bug #376301 by Julien Sanchez, bug #376499 by Mike Gilbert,
+  bug #376501 by Mike Gilbert. We're using bundled ffmpeg and libvpx again, and
+  NaCl is disabled temporarily.
+
+  04 Aug 2011; Markos Chandras <hwoarang@gentoo.org>
+  chromium-13.0.782.107.ebuild:
+  Stable on amd64 wrt bug #377475
+
+*chromium-13.0.782.107 (02 Aug 2011)
+
+  02 Aug 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-13.0.782.41-r1.ebuild, +chromium-13.0.782.107.ebuild:
+  Version bump for stable channel release. Remove old.
 
 *chromium-13.0.782.99 (21 Jul 2011)
 
