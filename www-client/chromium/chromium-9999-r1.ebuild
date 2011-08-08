@@ -44,7 +44,7 @@ RDEPEND="app-arch/bzip2
 	media-libs/speex
 	cups? ( >=net-print/cups-1.3.11 )
 	sys-libs/zlib
-	>=virtual/ffmpeg-0.6.90[threads]
+	>=media-video/ffmpeg-0.8[threads]
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
 	x11-libs/libXScrnSaver
@@ -79,7 +79,7 @@ src_unpack() {
 	cat .gclient || die
 
 	einfo "gclient sync start -->"
-	"${WORKDIR}/depot_tools/gclient" sync --force --nohooks || die
+	"${WORKDIR}/depot_tools/gclient" sync --jobs=16 --force --nohooks --delete_unversioned_trees || die
 	"$(PYTHON)" src/build/download_nacl_irt.py || die  # bug #366413
 	einfo "   working copy: ${ESVN_STORE_DIR}/${PN}"
 
@@ -164,7 +164,7 @@ src_prepare() {
 		\! -path 'third_party/leveldb/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
-		\! -path 'third_party/libvpx/libvpx.h' \
+		\! -path 'third_party/libvpx/*' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
 		\! -path 'third_party/npapi/*' \
@@ -180,6 +180,7 @@ src_prepare() {
 		\! -path 'third_party/undoview/*' \
 		\! -path 'third_party/webgl_conformance/*' \
 		\! -path 'third_party/webrtc/*' \
+		\! -path 'third_party/yasm/*' \
 		\! -path 'third_party/zlib/contrib/minizip/*' \
 		-delete || die
 
