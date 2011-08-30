@@ -82,7 +82,12 @@ src_unpack() {
 
 	einfo "gclient sync start -->"
 	"${WORKDIR}/depot_tools/gclient" sync --jobs=16 --force --nohooks --delete_unversioned_trees || die
-	"$(PYTHON)" src/build/download_nacl_irt.py || die  # bug #366413
+	#"$(PYTHON)" src/build/download_nacl_irt.py || die  # bug #366413
+	#"$(PYTHON)" src/build/download_nacl_toolchains.py \
+	#	--x86-version 6494 \
+	#	--nacl-newlib-only \
+	#	--file-hash linux_x86_newlib 01e245dc6dca16bea5cf840dbc77e3aa138f234f || die
+	"$(PYTHON)" src/build/download_nacl_toolchains.py --nacl-newlib-only || die
 	einfo "   working copy: ${ESVN_STORE_DIR}/${PN}"
 
 	mkdir -p "${S}" || die
