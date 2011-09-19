@@ -1,6 +1,6 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.53 2011/09/15 21:33:59 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.55 2011/09/18 03:08:19 floppym Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
@@ -175,8 +175,14 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch "${FILESDIR}/${PN}-expat-header.patch"
-	#epatch_user
+	#epatch "${FILESDIR}/${PN}-expat-header.patch"
+
+	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
+	sed -i '1i#define OF(x) x' \
+		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
+		chrome/common/zip.cc || die
+
+	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
@@ -254,6 +260,7 @@ src_configure() {
 		-Duse_system_zlib=1"
 
 	# Optional dependencies.
+	# TODO: linux_link_kerberos, bug #381289.
 	myconf+="
 		$(gyp_use cups use_cups)
 		$(gyp_use gnome use_gconf)
@@ -261,7 +268,6 @@ src_configure() {
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
 		$(gyp_use webrtc enable_webrtc)
 		$(gyp_use kerberos use_kerberos)
-		$(gyp_use kerberos linux_link_kerberos)
 		$(gyp_use pulseaudio use_pulseaudio)"
 
 	# Enable sandbox.
