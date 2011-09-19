@@ -1,6 +1,6 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-14.0.835.163.ebuild,v 1.3 2011/09/15 21:33:59 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-14.0.835.163.ebuild,v 1.6 2011/09/18 21:32:36 tomka Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
@@ -14,7 +14,7 @@ SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="amd64 x86"
 IUSE="bindist cups gnome gnome-keyring kerberos"
 
 # en_US is ommitted on purpose from the list below. It must always be available.
@@ -127,6 +127,11 @@ src_prepare() {
 
 	# Fix build with system libevent, to be upstreamed.
 	epatch "${FILESDIR}/${PN}-system-libevent-r0.patch"
+
+	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
+	sed -i '1i#define OF(x) x' \
+		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
+		chrome/common/zip.cc || die
 
 	epatch_user
 
