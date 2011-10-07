@@ -1,21 +1,21 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.56 2011/10/04 20:48:43 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-15.0.874.81.ebuild,v 1.1 2011/10/06 23:59:24 floppym Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
 
 inherit eutils fdo-mime flag-o-matic gnome2-utils linux-info multilib \
-	pax-utils portability python subversion toolchain-funcs versionator virtualx
+	pax-utils portability python toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-ESVN_REPO_URI="http://src.chromium.org/svn/trunk/src"
+SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
 
 LICENSE="BSD"
-SLOT="live"
-KEYWORDS=""
-IUSE="bindist chromedriver cups gnome gnome-keyring kerberos pulseaudio webrtc"
+SLOT="0"
+KEYWORDS="~amd64 ~x86"
+IUSE="bindist chromedriver cups gnome gnome-keyring kerberos pulseaudio"
 
 # en_US is ommitted on purpose from the list below. It must always be available.
 LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he hi hr
@@ -46,7 +46,6 @@ RDEPEND="app-arch/bzip2
 		>=net-print/cups-1.3.11
 	)
 	sys-libs/zlib
-	webrtc? ( media-sound/pulseaudio )
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
 	x11-libs/libXScrnSaver
@@ -54,69 +53,18 @@ RDEPEND="app-arch/bzip2
 	kerberos? ( virtual/krb5 )"
 DEPEND="${RDEPEND}
 	dev-lang/perl
-	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
 	>=dev-util/pkgconfig-0.23
-	dev-util/scons
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
 	test? (
 		dev-python/pyftpdlib
+		dev-python/simplejson
 	)"
 RDEPEND+="
-	!=www-client/chromium-9999
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
-
-gclient_config() {
-	einfo "gclient config -->"
-	# Allow the user to keep their config if they know what they are doing.
-	if ! grep -q KEEP .gclient; then
-		cp -f "${FILESDIR}/dot-gclient" .gclient || die
-	fi
-	cat .gclient || die
-}
-
-gclient_sync() {
-	einfo "gclient sync -->"
-	"${WORKDIR}/depot_tools/gclient" sync --nohooks --jobs=16 \
-		--delete_unversioned_trees || die
-}
-
-gclient_runhooks() {
-	# Run all hooks except gyp_chromium.
-	einfo "gclient runhooks -->"
-	cp src/DEPS src/DEPS.orig || die
-	sed -e 's:"python", "src/build/gyp_chromium":"true":' -i src/DEPS || die
-	"${WORKDIR}/depot_tools/gclient" runhooks
-	local ret=$?
-	mv src/DEPS.orig src/DEPS || die
-	[[ ${ret} -eq 0 ]] || die "gclient runhooks failed"
-}
-
-src_unpack() {
-	# First grab depot_tools.
-	ESVN_REVISION= subversion_fetch "http://src.chromium.org/svn/trunk/tools/depot_tools"
-	mv "${S}" "${WORKDIR}"/depot_tools || die
-
-	cd "${ESVN_STORE_DIR}/${PN}" || die
-
-	gclient_config
-	gclient_sync
-	gclient_runhooks
-
-	subversion_wc_info
-
-	mkdir -p "${S}" || die
-	einfo "Copying source to ${S}"
-	rsync -rlpgo --exclude=".svn/" src/ "${S}" || die
-
-	# Display correct svn revision in about box, and log new version.
-	echo "${ESVN_WC_REVISION}" > "${S}"/build/LASTCHANGE.in || die
-	. src/chrome/VERSION
-	elog "Installing/updating to version ${MAJOR}.${MINOR}.${BUILD}.${PATCH} (Developer Build ${ESVN_WC_REVISION})"
-}
 
 gyp_use() {
 	if [[ $# -lt 2 ]]; then
@@ -143,8 +91,7 @@ chromium_lang() {
 }
 
 pkg_setup() {
-	SUFFIX="-${SLOT}"
-	CHROMIUM_HOME="/usr/$(get_libdir)/chromium-browser${SUFFIX}"
+	CHROMIUM_HOME="/usr/$(get_libdir)/chromium-browser"
 
 	# Make sure the build system will use the right tools, bug #340795.
 	tc-export AR CC CXX RANLIB
@@ -175,12 +122,16 @@ pkg_setup() {
 }
 
 src_prepare() {
+	cp "${FILESDIR}/nacl.gypi" chrome/ || die
+
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
 	sed -i '1i#define OF(x) x' \
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
 		chrome/common/zip.cc || die
 
-	epatch "${FILESDIR}/${PN}-expat-header.patch"
+	# Backport http://codereview.chromium.org/8038051, fix for bug #383121.
+	epatch "${FILESDIR}/${PN}-kerberos-r0.patch"
+
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
@@ -189,6 +140,7 @@ src_prepare() {
 		\! -path 'third_party/angle/*' \
 		\! -path 'third_party/cacheinvalidation/*' \
 		\! -path 'third_party/cld/*' \
+		\! -path 'third_party/expat/*' \
 		\! -path 'third_party/ffmpeg/*' \
 		\! -path 'third_party/flac/flac.h' \
 		\! -path 'third_party/gpsd/*' \
@@ -239,6 +191,10 @@ src_configure() {
 	# Disable NaCl temporarily, this tarball doesn't have IRT.
 	myconf+=" -Ddisable_nacl=1"
 
+	# Disable WebRTC until they make PulseAudio dependency optional,
+	# bug #377847.
+	myconf+=" -Denable_webrtc=0"
+
 	# Use system-provided libraries.
 	# TODO: use_system_ffmpeg
 	# TODO: use_system_hunspell (upstream changes needed).
@@ -265,7 +221,6 @@ src_configure() {
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
-		$(gyp_use webrtc enable_webrtc)
 		$(gyp_use kerberos use_kerberos)
 		$(gyp_use pulseaudio use_pulseaudio)"
 
@@ -282,8 +237,7 @@ src_configure() {
 
 	# Our system ffmpeg should support more codecs than the bundled one
 	# for Chromium.
-	myconf+=" -Dproprietary_codecs=1"
-	myconf+=" -Dffmpeg_branding=Chrome"
+	# myconf+=" -Dproprietary_codecs=1"
 
 	if ! use bindist; then
 		# Enable H.624 support in bundled ffmpeg.
@@ -382,18 +336,12 @@ src_install() {
 	# esac
 
 	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
-	sed "s:chromium-browser:chromium-browser${SUFFIX}:g" \
-		-i "${ED}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
-	sed "s:chromium.desktop:chromium${SUFFIX}.desktop:g" \
-		-i "${ED}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
-	sed "s:plugins:plugins --user-data-dir=\${HOME}/.config/chromium${SUFFIX}:" \
-		-i "${ED}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
 
 	# It is important that we name the target "chromium-browser",
 	# xdg-utils expect it; bug #355517.
-	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium-browser${SUFFIX} || die
+	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium-browser || die
 	# keep the old symlink around for consistency
-	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium${SUFFIX} || die
+	dosym "${CHROMIUM_HOME}/chromium-launcher.sh" /usr/bin/chromium || die
 
 	# Allow users to override command-line options, bug #357629.
 	dodir /etc/chromium || die
@@ -445,8 +393,8 @@ src_install() {
 	doins -r out/Release/locales || die
 	doins -r out/Release/resources || die
 
-	newman out/Release/chrome.1 chromium${SUFFIX}.1 || die
-	newman out/Release/chrome.1 chromium-browser${SUFFIX}.1 || die
+	newman out/Release/chrome.1 chromium.1 || die
+	newman out/Release/chrome.1 chromium-browser.1 || die
 
 	# Chromium looks for these in its folder
 	# See media_posix.cc and base_paths_linux.cc
@@ -459,11 +407,11 @@ src_install() {
 	for SIZE in 16 22 24 32 48 64 128 256 ; do
 		insinto /usr/share/icons/hicolor/${SIZE}x${SIZE}/apps
 		newins chrome/app/theme/chromium/product_logo_${SIZE}.png \
-			chromium-browser${SUFFIX}.png || die
+			chromium-browser.png || die
 	done
 	local mime_types="text/html;text/xml;application/xhtml+xml;"
 	mime_types+="x-scheme-handler/http;x-scheme-handler/https;" # bug #360797
-	make_desktop_entry chromium-browser${SUFFIX} "Chromium ${SLOT}" chromium-browser${SUFFIX} \
+	make_desktop_entry chromium-browser "Chromium" chromium-browser \
 		"Network;WebBrowser" \
 		"MimeType=${mime_types}\nStartupWMClass=chromium-browser"
 	sed -e "/^Exec/s/$/ %U/" -i "${ED}"/usr/share/applications/*.desktop || die
@@ -472,9 +420,7 @@ src_install() {
 	if use gnome; then
 		dodir /usr/share/gnome-control-center/default-apps || die
 		insinto /usr/share/gnome-control-center/default-apps
-		newins "${FILESDIR}"/chromium-browser.xml chromium-browser${SUFFIX}.xml || die
-		sed "s:chromium-browser:chromium-browser${SUFFIX}:g" -i \
-			"${ED}"/usr/share/gnome-control-center/default-apps/chromium-browser${SUFFIX}.xml
+		doins "${FILESDIR}"/chromium-browser.xml || die
 	fi
 }
 
@@ -510,16 +456,6 @@ pkg_postinst() {
 	elog " - media-fonts/takao-fonts"
 	elog " - media-fonts/wqy-microhei"
 	elog " - media-fonts/wqy-zenhei"
-
-	elog
-	elog "The live ebuild of chromium is now in its own slot."
-	elog "This means that you can have it installed alongside a versioned"
-	elog "release and it has its own configuration folder, located at"
-	elog "	\${HOME}/.config/chromium-live"
-	elog "If you want to use any existing, old configuration, you'll have to"
-	elog "rename the old config directory *before* launching chromium-live:"
-	elog "	mv \${HOME}/.config/chromium \${HOME}/.config/chromium-live"
-	elog "To run, execute chromium-live or chromium-browser-live."
 }
 
 pkg_postrm() {
