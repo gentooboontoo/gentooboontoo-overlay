@@ -181,6 +181,7 @@ src_prepare() {
 		chrome/common/zip.cc || die
 
 	epatch "${FILESDIR}/${PN}-expat-header.patch"
+	epatch "${FILESDIR}/pulse_output.cc.patch"
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.

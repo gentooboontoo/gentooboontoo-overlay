@@ -1,0 +1,10 @@
+--- media/audio/linux/pulse_output.cc.orig	2011-10-11 08:51:44.999761967 +0200
++++ media/audio/linux/pulse_output.cc	2011-10-11 08:54:44.176792876 +0200
+@@ -4,6 +4,7 @@
+ 
+ #include "media/audio/linux/pulse_output.h"
+ 
++#include "base/bind.h"
+ #include "base/message_loop.h"
+ #include "media/audio/audio_parameters.h"
+ #include "media/audio/audio_util.h"
