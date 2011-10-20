@@ -1,6 +1,65 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.461 2011/10/08 03:00:31 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.472 2011/10/19 21:49:16 floppym Exp $
+
+*chromium-16.0.912.0 (19 Oct 2011)
+
+  19 Oct 2011; Mike Gilbert <floppym@gentoo.org> +chromium-16.0.912.0.ebuild:
+  Version bump for dev channel release.
+
+*chromium-16.0.904.0-r3 (19 Oct 2011)
+
+  19 Oct 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-14.0.835.163.ebuild, -chromium-16.0.904.0-r1.ebuild,
+  +chromium-16.0.904.0-r3.ebuild, chromium-9999-r1.ebuild:
+  Re-enable NaCl (previosuly broken by bug #386931 by Kamen Dokov). Remove old.
+
+  18 Oct 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-16.0.904.0-r2.ebuild, chromium-9999-r1.ebuild:
+  Bump to EAPI-4; use pkg_pretend and make missing sandbox support in kernel
+  fatal if installing the package; add a die hook for better diagnostics and
+  more precise error messages.
+
+  17 Oct 2011; Andreas Schuerch <nativemad@gentoo.org>
+  chromium-14.0.835.202.ebuild:
+  x86 stable, bug 385649
+
+  15 Oct 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-16.0.904.0-r2.ebuild, chromium-9999-r1.ebuild:
+  Fix build failures: bug #386931 by Kamen Dokov (disabled NaCl again), bug
+  #387145 by Agostino Sarubbo (required recent enough V8).
+
+  13 Oct 2011; Mike Gilbert <floppym@gentoo.org> chromium-9999-r1.ebuild:
+  Don't depend on scons; we are using the bundled copy.
+
+  13 Oct 2011; Mike Gilbert <floppym@gentoo.org> chromium-16.0.904.0-r1.ebuild,
+  chromium-16.0.904.0-r2.ebuild:
+  DEPEND on dev-python/simplejson unconditionally. Bug 386861 by Andrew Waters.
+
+*chromium-15.0.874.92 (12 Oct 2011)
+
+  12 Oct 2011; Mike Gilbert <floppym@gentoo.org> -chromium-15.0.874.81.ebuild,
+  +chromium-15.0.874.92.ebuild:
+  Version bump for beta channel release.
+
+*chromium-16.0.904.0-r2 (12 Oct 2011)
+
+  12 Oct 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/extract_v8_version.py, -chromium-16.0.904.0.ebuild,
+  +chromium-16.0.904.0-r2.ebuild, chromium-9999-r1.ebuild:
+  Use system V8. Hopefully bug #357809 shouldn't return. Remove old.
+
+*chromium-16.0.904.0-r1 (12 Oct 2011)
+
+  12 Oct 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-16.0.904.0-r1.ebuild, chromium-9999-r1.ebuild:
+  Re-enable NaCl.
+
+*chromium-16.0.904.0 (11 Oct 2011)
+
+  11 Oct 2011; Mike Gilbert <floppym@gentoo.org> -chromium-16.0.891.0.ebuild,
+  +chromium-16.0.904.0.ebuild:
+  Version bump for dev channel release.
 
 *chromium-15.0.874.83 (08 Oct 2011)
 
