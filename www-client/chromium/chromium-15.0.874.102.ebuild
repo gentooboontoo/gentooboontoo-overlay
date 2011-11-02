@@ -1,6 +1,6 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-16.0.899.0.ebuild,v 1.1 2011/10/04 20:48:43 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-15.0.874.102.ebuild,v 1.4 2011/10/28 13:50:45 phajdan.jr Exp $
 
 EAPI="3"
 PYTHON_DEPEND="2:2.6"
@@ -10,12 +10,12 @@ inherit eutils fdo-mime flag-o-matic gnome2-utils linux-info multilib \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="http://build.chromium.org/official/${P}.tar.bz2"
+SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.bz2"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
-IUSE="bindist chromedriver cups gnome gnome-keyring kerberos pulseaudio"
+KEYWORDS="amd64 x86"
+IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio"
 
 # en_US is ommitted on purpose from the list below. It must always be available.
 LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he hi hr
@@ -122,10 +122,15 @@ pkg_setup() {
 }
 
 src_prepare() {
+	cp "${FILESDIR}/nacl.gypi" chrome/ || die
+
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
 	sed -i '1i#define OF(x) x' \
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
 		chrome/common/zip.cc || die
+
+	# Backport http://codereview.chromium.org/8038051, fix for bug #383121.
+	epatch "${FILESDIR}/${PN}-kerberos-r0.patch"
 
 	epatch_user
 
@@ -185,6 +190,10 @@ src_configure() {
 
 	# Disable NaCl temporarily, this tarball doesn't have IRT.
 	myconf+=" -Ddisable_nacl=1"
+
+	# Disable WebRTC until they make PulseAudio dependency optional,
+	# bug #377847.
+	myconf+=" -Denable_webrtc=0"
 
 	# Use system-provided libraries.
 	# TODO: use_system_ffmpeg
@@ -262,11 +271,8 @@ src_configure() {
 }
 
 src_compile() {
-	emake chrome chrome_sandbox BUILDTYPE=Release V=1 || die
+	emake chrome chrome_sandbox chromedriver BUILDTYPE=Release V=1 || die
 	pax-mark m out/Release/chrome
-	if use chromedriver; then
-		emake chromedriver BUILDTYPE=Release V=1 || die
-	fi
 	if use test; then
 		emake {base,crypto,googleurl,net}_unittests BUILDTYPE=Release V=1 || die
 		pax-mark m out/Release/{base,crypto,googleurl,net}_unittests
@@ -309,9 +315,7 @@ src_install() {
 	doexe out/Release/chrome_sandbox || die
 	fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
 
-	if use chromedriver; then
-		doexe out/Release/chromedriver || die
-	fi
+	doexe out/Release/chromedriver || die
 
 	# Install Native Client files on platforms that support it.
 	# insinto "${CHROMIUM_HOME}"

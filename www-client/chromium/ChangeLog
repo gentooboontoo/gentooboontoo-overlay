@@ -1,6 +1,69 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.473 2011/10/21 02:48:29 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.485 2011/11/02 04:32:47 floppym Exp $
+
+  02 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-16.0.912.21.ebuild,
+  chromium-9999-r1.ebuild:
+  Install nacl_helper.
+
+*chromium-16.0.912.21 (02 Nov 2011)
+
+  02 Nov 2011; Mike Gilbert <floppym@gentoo.org> +chromium-16.0.912.21.ebuild,
+  -chromium-16.0.912.12.ebuild:
+  Version bump for dev channel release.
+
+  01 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-16.0.912.15.ebuild, chromium-9999-r1.ebuild:
+  Make CUPS required, bug #388497 by rom.gentoo.
+
+  01 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-9999-r1.ebuild:
+  Disable gclient runhooks so we use the system nacl-toolchain-newlib.
+
+  01 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-9999-r1.ebuild:
+  Keep third_party/jsoncpp. Bug 388915 by Ralf Mayer.
+
+  28 Oct 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-14.0.835.202.ebuild, -chromium-15.0.874.100.ebuild,
+  chromium-15.0.874.102.ebuild, metadata.xml:
+  x86 stable wrt security bug #388461, remove old.
+
+*chromium-16.0.912.15 (28 Oct 2011)
+
+  28 Oct 2011; Mike Gilbert <floppym@gentoo.org> +chromium-16.0.912.15.ebuild,
+  -chromium-16.0.912.4.ebuild:
+  Version bump for dev channel release.
+
+*chromium-15.0.874.106 (26 Oct 2011)
+
+  26 Oct 2011; Mike Gilbert <floppym@gentoo.org> +chromium-15.0.874.106.ebuild:
+  Version bump for stable channel release.
+
+*chromium-16.0.912.12 (26 Oct 2011)
+
+  26 Oct 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-16.0.912.0.ebuild, +chromium-16.0.912.12.ebuild,
+  chromium-9999-r1.ebuild:
+  Version bump for dev channel release. Further reduce number of differences
+  between live and non-live ebuilds. Remove old.
+
+  25 Oct 2011; Mike Gilbert <floppym@gentoo.org> chromium-15.0.874.102.ebuild:
+  Stable on amd64 wrt bug 388461. Arch tested by ago.
+
+  24 Oct 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-15.0.874.102.ebuild, chromium-16.0.912.4.ebuild,
+  chromium-9999-r1.ebuild:
+  Maintainability cleanup: always build chromedriver to reduce number of USE
+  flags (testability); reduce number of differences between live and non-live
+  ebuild.
+
+*chromium-16.0.912.4 (21 Oct 2011)
+*chromium-15.0.874.102 (21 Oct 2011)
+
+  21 Oct 2011; Mike Gilbert <floppym@gentoo.org> -chromium-15.0.874.92.ebuild,
+  +chromium-15.0.874.102.ebuild, -chromium-16.0.899.0.ebuild,
+  -chromium-16.0.904.0-r2.ebuild, -chromium-16.0.904.0-r3.ebuild,
+  +chromium-16.0.912.4.ebuild:
+  Version bumps for beta and dev channel releases.
 
 *chromium-15.0.874.100 (21 Oct 2011)
 
