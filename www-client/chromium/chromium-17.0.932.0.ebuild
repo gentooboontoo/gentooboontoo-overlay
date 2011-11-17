@@ -1,20 +1,20 @@
 # Copyright 1999-2011 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.77 2011/11/16 01:55:37 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-17.0.932.0.ebuild,v 1.3 2011/11/11 15:46:22 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
 
 inherit eutils fdo-mime flag-o-matic gnome2-utils linux-info multilib \
-	pax-utils portability python subversion toolchain-funcs versionator virtualx
+	pax-utils portability python toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-ESVN_REPO_URI="http://src.chromium.org/svn/trunk/src"
+SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.bz2"
 
 LICENSE="BSD"
-SLOT="live"
-KEYWORDS=""
+SLOT="0"
+KEYWORDS="~amd64 ~x86"
 IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio"
 
 # en_US is ommitted on purpose from the list below. It must always be available.
@@ -26,6 +26,10 @@ for lang in ${LANGS}; do
 done
 
 RDEPEND="app-arch/bzip2
+	cups? (
+		dev-libs/libgcrypt
+		>=net-print/cups-1.3.11
+	)
 	>=dev-lang/v8-3.6.5.1
 	dev-libs/dbus-glib
 	dev-libs/elfutils
@@ -43,10 +47,6 @@ RDEPEND="app-arch/bzip2
 	>=media-libs/libwebp-0.1.2
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
-	cups? (
-		dev-libs/libgcrypt
-		>=net-print/cups-1.3.11
-	)
 	sys-libs/zlib
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
@@ -68,59 +68,6 @@ RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
-
-gclient_config() {
-	einfo "gclient config -->"
-	# Allow the user to keep their config if they know what they are doing.
-	if ! grep -q KEEP .gclient; then
-		cp -f "${FILESDIR}/dot-gclient" .gclient || die
-	fi
-	cat .gclient || die
-}
-
-gclient_sync() {
-	einfo "gclient sync -->"
-	"${WORKDIR}/depot_tools/gclient" sync --nohooks --jobs=16 \
-		--delete_unversioned_trees || die
-}
-
-gclient_runhooks() {
-	# Run all hooks except gyp_chromium.
-	einfo "gclient runhooks -->"
-	cp src/DEPS src/DEPS.orig || die
-	sed -e 's:"python", "src/build/gyp_chromium":"true":' -i src/DEPS || die
-	"${WORKDIR}/depot_tools/gclient" runhooks
-	local ret=$?
-	mv src/DEPS.orig src/DEPS || die
-	[[ ${ret} -eq 0 ]] || die "gclient runhooks failed"
-}
-
-src_unpack() {
-	# First grab depot_tools.
-	ESVN_REVISION= subversion_fetch "http://src.chromium.org/svn/trunk/tools/depot_tools"
-	mv "${S}" "${WORKDIR}"/depot_tools || die
-
-	cd "${ESVN_STORE_DIR}/${PN}" || die
-
-	gclient_config
-	gclient_sync
-
-	# Disabled so that we do not download nacl toolchain.
-	#gclient_runhooks
-	# Remove any lingering nacl toolchain files.
-	rm -rf src/native_client/toolchain/linux_x86_newlib
-
-	subversion_wc_info
-
-	mkdir -p "${S}" || die
-	einfo "Copying source to ${S}"
-	rsync -rlpgo --exclude=".svn/" src/ "${S}" || die
-
-	# Display correct svn revision in about box, and log new version.
-	echo "${ESVN_WC_REVISION}" > "${S}"/build/LASTCHANGE.in || die
-	. src/chrome/VERSION
-	elog "Installing/updating to version ${MAJOR}.${MINOR}.${BUILD}.${PATCH} (Developer Build ${ESVN_WC_REVISION})"
-}
 
 gyp_use() {
 	if [[ $# -lt 2 ]]; then
@@ -228,7 +175,9 @@ src_prepare() {
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
 	sed -i '1i#define OF(x) x' \
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
-		chrome/common/zip*.cc || die
+		chrome/common/zip.cc || die
+
+	epatch "${FILESDIR}/${PN}-cups-r0.patch"
 
 	epatch_user
 
@@ -583,16 +532,6 @@ pkg_postinst() {
 	elog " - media-fonts/takao-fonts"
 	elog " - media-fonts/wqy-microhei"
 	elog " - media-fonts/wqy-zenhei"
-
-	elog
-	elog "The live ebuild of chromium is now in its own slot."
-	elog "This means that you can have it installed alongside a versioned"
-	elog "release and it has its own configuration folder, located at"
-	elog "	\${HOME}/.config/chromium-live"
-	elog "If you want to use any existing, old configuration, you'll have to"
-	elog "rename the old config directory *before* launching chromium-live:"
-	elog "	mv \${HOME}/.config/chromium \${HOME}/.config/chromium-live"
-	elog "To run, execute chromium-live or chromium-browser-live."
 }
 
 pkg_postrm() {
