@@ -1,6 +1,98 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.485 2011/11/02 04:32:47 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.505 2011/11/17 11:38:23 chainsaw Exp $
+
+  17 Nov 2011; Tony Vroon <chainsaw@gentoo.org> chromium-15.0.874.121.ebuild:
+  Marked stable on AMD64 based on arch testing by Agostino "ago" Sarubbo in
+  security bug #390779. I am told that Mike Gilbert feels 1 AT report is
+  sufficient.
+
+*chromium-15.0.874.121 (17 Nov 2011)
+
+  17 Nov 2011; Mike Gilbert <floppym@gentoo.org> +chromium-15.0.874.121.ebuild:
+  Version bump for stable channel release.
+
+  16 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-17.0.938.0.ebuild,
+  chromium-9999-r1.ebuild:
+  zip_reader.cc needs to be updated as well.
+
+  15 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-17.0.938.0.ebuild:
+  Apply workaround for bug 383371 to zip_internal.cc. Bug 390633.
+
+*chromium-17.0.938.0 (15 Nov 2011)
+
+  15 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-17.0.928.0.ebuild, +chromium-17.0.938.0.ebuild:
+  Version bump for dev channel release, remove old.
+
+*chromium-16.0.912.36 (11 Nov 2011)
+
+  11 Nov 2011; Mike Gilbert <floppym@gentoo.org> +chromium-16.0.912.36.ebuild,
+  -chromium-16.0.912.21.ebuild:
+  Version bump for beta channel release.
+
+  11 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-16.0.912.32.ebuild, chromium-17.0.932.0.ebuild,
+  chromium-9999-r1.ebuild:
+  Remove breaking CFLAGS, bug #390147 by Alex Boyd.
+
+  11 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-15.0.874.102.ebuild, -chromium-15.0.874.106.ebuild,
+  chromium-15.0.874.120.ebuild:
+  x86 stable wrt security bug #390113. Remove old.
+
+  10 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-9999-r1.ebuild:
+  Apply workaround for bug 383371 to zip_internal.cc. Reported by godmachine-x6.
+
+  10 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-15.0.874.120.ebuild:
+  Stable on amd64 based on testing by ago. Security bug 390113.
+
+*chromium-15.0.874.120 (10 Nov 2011)
+
+  10 Nov 2011; Mike Gilbert <floppym@gentoo.org> +chromium-15.0.874.120.ebuild:
+  Version bump for stable channel release.
+
+  10 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-17.0.932.0.ebuild, chromium-9999-r1.ebuild:
+  Restore cups USE flag for 17.x, and also run more tests.
+
+  10 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-cups-r0.patch, chromium-16.0.912.32.ebuild:
+  Restore cups USE flag, bug #388497 by rom.gentoo.
+
+  09 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-9999-r1.ebuild:
+  Restore cups USE flag for live ebuild. Bug 388497.
+
+*chromium-16.0.912.32 (09 Nov 2011)
+
+  09 Nov 2011; Mike Gilbert <floppym@gentoo.org> +chromium-16.0.912.32.ebuild,
+  -chromium-16.0.912.15.ebuild:
+  Version bump for beta channel release. Move kernel checks to pkg_setup.
+
+*chromium-17.0.932.0 (08 Nov 2011)
+
+  08 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-17.0.932.0.ebuild, chromium-9999-r1.ebuild:
+  Version bump for dev channel release. Use system yasm. Move kernel options
+  checking back to pkg_setup to make it visible in the logs. NaCl doesn't work
+  (bug #389379 by Tatsh).
+
+  08 Nov 2011; Robin H. Johnson <robbat2@gentoo.org>
+  chromium-16.0.912.15.ebuild:
+  Make CONFIG_CHECK non-fatal, like other ebuilds.
+
+  04 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-9999-r1.ebuild:
+  Remove any leftover nacl toolchain files.
+
+*chromium-17.0.928.0 (04 Nov 2011)
+
+  04 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-17.0.928.0.ebuild:
+  Version bump for dev channel release.
+
+  04 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-16.0.912.21.ebuild, chromium-9999-r1.ebuild:
+  Make kernel checks non-fatal again, people don't like them being fatal.
 
   02 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-16.0.912.21.ebuild,
   chromium-9999-r1.ebuild:
