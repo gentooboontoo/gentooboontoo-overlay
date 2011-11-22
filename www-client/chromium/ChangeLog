@@ -1,6 +1,21 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.505 2011/11/17 11:38:23 chainsaw Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.508 2011/11/19 17:25:02 floppym Exp $
+
+  19 Nov 2011; Mike Gilbert <floppym@gentoo.org> chromium-17.0.942.0.ebuild,
+  chromium-9999-r1.ebuild:
+  Update v8 dependency to 3.7.7, thanks to Martin Jansa in bug 391007. Make live
+  ebuild deps match dev channel.
+
+*chromium-17.0.942.0 (18 Nov 2011)
+
+  18 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-17.0.932.0.ebuild, +chromium-17.0.942.0.ebuild:
+  Version bump for dev channel release. Remove old.
+
+  18 Nov 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-15.0.874.120.ebuild, chromium-15.0.874.121.ebuild:
+  x86 stable wrt security bug #390779. Remove old.
 
   17 Nov 2011; Tony Vroon <chainsaw@gentoo.org> chromium-15.0.874.121.ebuild:
   Marked stable on AMD64 based on arch testing by Agostino "ago" Sarubbo in
