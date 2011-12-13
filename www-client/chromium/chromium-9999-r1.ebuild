@@ -81,8 +81,7 @@ gclient_config() {
 
 gclient_sync() {
 	einfo "gclient sync -->"
-	# Only use a single job to prevent hangs.
-	"${WORKDIR}/depot_tools/gclient" sync --nohooks --jobs=1 \
+	"${WORKDIR}/depot_tools/gclient" sync --nohooks --jobs=16 \
 		--delete_unversioned_trees || die
 }
 
