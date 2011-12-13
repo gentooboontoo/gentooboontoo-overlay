@@ -1,6 +1,42 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2011 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.511 2011/11/25 11:24:15 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.519 2011/12/09 02:30:29 floppym Exp $
+
+*chromium-17.0.963.2 (09 Dec 2011)
+
+  09 Dec 2011; Mike Gilbert <floppym@gentoo.org> +chromium-17.0.963.2.ebuild:
+  Version bump for dev channel release.
+
+*chromium-16.0.912.63 (08 Dec 2011)
+
+  08 Dec 2011; Mike Gilbert <floppym@gentoo.org> +chromium-16.0.912.63.ebuild,
+  -chromium-16.0.912.41.ebuild:
+  Version bump for beta channel release.
+
+  07 Dec 2011; Mike Gilbert <floppym@gentoo.org> chromium-17.0.963.0.ebuild:
+  Update nacl-toolchain-newlib dependency.
+
+*chromium-17.0.963.0 (07 Dec 2011)
+
+  07 Dec 2011; Mike Gilbert <floppym@gentoo.org> +chromium-17.0.963.0.ebuild,
+  -chromium-17.0.938.0.ebuild:
+  Version bump for dev channel release.
+
+  02 Dec 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org> chromium-9999-r1.ebuild:
+  Limit gclient sync to one job to prevent hangs. Consulted upstream before
+  applying.
+
+*chromium-16.0.912.59 (02 Dec 2011)
+
+  02 Dec 2011; Mike Gilbert <floppym@gentoo.org> +chromium-16.0.912.59.ebuild,
+  -chromium-16.0.912.36.ebuild:
+  Version bump for beta channel release.
+
+  02 Dec 2011; Pawel Hajdan jr <phajdan.jr@gentoo.org> chromium-9999-r1.ebuild:
+  Update nacl-toolchain-newlib dependency to fix bug #392389 by Julien Sanchez.
+
+  01 Dec 2011; Mike Gilbert <floppym@gentoo.org> chromium-9999-r1.ebuild:
+  Keep third_party/khronos.
 
 *chromium-16.0.912.41 (25 Nov 2011)
 
