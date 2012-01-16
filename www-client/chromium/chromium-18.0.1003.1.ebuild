@@ -1,6 +1,6 @@
-# Copyright 1999-2011 Gentoo Foundation
+# Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-17.0.963.2.ebuild,v 1.1 2011/12/09 02:30:29 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-18.0.1003.1.ebuild,v 1.2 2012/01/13 02:27:42 floppym Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -15,7 +15,7 @@ SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio"
+IUSE="bindist cups custom-cflags gnome gnome-keyring kerberos pulseaudio"
 
 # en_US is ommitted on purpose from the list below. It must always be available.
 LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he hi hr
@@ -47,6 +47,7 @@ RDEPEND="app-arch/bzip2
 	>=media-libs/libwebp-0.1.2
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
+	sys-fs/udev
 	sys-libs/zlib
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
@@ -129,6 +130,14 @@ chromium-pkg_die() {
 		ewarn
 	fi
 
+	# No ricer bugs.
+	if use custom-cflags; then
+		ewarn
+		ewarn "You have enabled the custom-cflags USE flag."
+		ewarn "Please disable it before reporting a bug."
+		ewarn
+	fi
+
 	# If the system doesn't have enough memory, the compilation is known to
 	# fail. Print info about memory to recognize this condition.
 	einfo
@@ -177,6 +186,9 @@ src_prepare() {
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
 		chrome/common/zip*.cc || die
 
+	# Revert WebKit changeset responsible for Gentoo bug #393471.
+	epatch "${FILESDIR}/${PN}-revert-jpeg-swizzle-r1.patch"
+
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
@@ -200,6 +212,7 @@ src_prepare() {
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
 		\! -path 'third_party/libvpx/*' \
+		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
@@ -322,8 +335,10 @@ src_configure() {
 	myconf+=" -Dwerror="
 
 	# Avoid CFLAGS problems, bug #352457, bug #390147.
-	replace-flags "-Os" "-O2"
-	strip-flags
+	if ! use custom-cflags; then
+		replace-flags "-Os" "-O2"
+		strip-flags
+	fi
 
 	egyp ${myconf} || die
 }
@@ -353,9 +368,10 @@ src_test() {
 		die "Tests must be run as non-root. Please use FEATURES=userpriv."
 	fi
 
-	# For more info see bug #350347.
+	# ICUStringConversionsTest: bug #350347.
+	# MessagePumpLibeventTest: bug #398501.
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/base_unittests virtualmake \
-		'--gtest_filter=-ICUStringConversionsTest.*'
+		'--gtest_filter=-ICUStringConversionsTest.*:MessagePumpLibeventTest.*'
 
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/cacheinvalidation_unittests virtualmake
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/crypto_unittests virtualmake
@@ -364,10 +380,9 @@ src_test() {
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/media_unittests virtualmake
 
 	# NetUtilTest: bug #361885.
-	# NetUtilTest.GenerateFileName: some locale-related mismatch.
-	# UDP: unstable, active development. We should revisit this later.
+	# DnsConfigServiceTest.GetSystemConfig: bug #394883.
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/net_unittests virtualmake \
-		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:NetUtilTest.GenerateFileName:*UDP*'
+		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig'
 
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/printing_unittests virtualmake
 }
