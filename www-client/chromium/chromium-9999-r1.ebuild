@@ -15,7 +15,7 @@ ESVN_REPO_URI="http://src.chromium.org/svn/trunk/src"
 LICENSE="BSD"
 SLOT="live"
 KEYWORDS=""
-IUSE="bindist cups custom-cflags gnome gnome-keyring kerberos pulseaudio webrtc"
+IUSE="bindist cups custom-cflags gnome gnome-keyring kerberos pulseaudio"
 
 # en_US is ommitted on purpose from the list below. It must always be available.
 LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he hi hr
@@ -49,7 +49,6 @@ RDEPEND="app-arch/bzip2
 	pulseaudio? ( media-sound/pulseaudio )
 	sys-fs/udev
 	sys-libs/zlib
-	webrtc? ( media-sound/pulseaudio )
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
 	x11-libs/libXScrnSaver
@@ -240,7 +239,6 @@ src_prepare() {
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
 		chrome/common/zip*.cc || die
 
-	epatch "${FILESDIR}/${PN}-expat-header.patch"
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
@@ -249,6 +247,7 @@ src_prepare() {
 		\! -path 'third_party/angle/*' \
 		\! -path 'third_party/cacheinvalidation/*' \
 		\! -path 'third_party/cld/*' \
+		\! -path 'third_party/expat/*' \
 		\! -path 'third_party/ffmpeg/*' \
 		\! -path 'third_party/flac/flac.h' \
 		\! -path 'third_party/gpsd/*' \
@@ -342,7 +341,6 @@ src_configure() {
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
-		$(gyp_use webrtc enable_webrtc)
 		$(gyp_use kerberos use_kerberos)
 		$(gyp_use pulseaudio use_pulseaudio)"
 
@@ -359,8 +357,7 @@ src_configure() {
 
 	# Our system ffmpeg should support more codecs than the bundled one
 	# for Chromium.
-	myconf+=" -Dproprietary_codecs=1"
-	myconf+=" -Dffmpeg_branding=Chrome"
+	# myconf+=" -Dproprietary_codecs=1"
 
 	if ! use bindist; then
 		# Enable H.624 support in bundled ffmpeg.
