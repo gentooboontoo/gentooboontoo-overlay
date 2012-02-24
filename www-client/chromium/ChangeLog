@@ -1,6 +1,42 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2012 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.558 2012/02/11 22:57:49 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.565 2012/02/22 03:17:38 floppym Exp $
+
+*chromium-18.0.1025.39 (22 Feb 2012)
+
+  22 Feb 2012; Mike Gilbert <floppym@gentoo.org> +chromium-18.0.1025.39.ebuild,
+  -chromium-18.0.1025.11.ebuild:
+  Version bump for beta channel release.
+
+*chromium-19.0.1041.0 (17 Feb 2012)
+
+  17 Feb 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-19.0.1041.0.ebuild, chromium-9999-r1.ebuild:
+  Version bump for dev channel release. Fix bug #393471 by depending on
+  >=libjpeg-turbo-1.2.0. Suppress test failure (bug #399269).
+
+  17 Feb 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-17.0.963.46-r1.ebuild, chromium-17.0.963.56.ebuild:
+  x86 stable wrt security bug #404067; suppress test failure (bug #399269);
+  remove old
+
+  16 Feb 2012; Agostino Sarubbo <ago@gentoo.org> chromium-17.0.963.56.ebuild:
+  Stable for AMD64, wrt security bug #404067
+
+*chromium-18.0.1025.33 (16 Feb 2012)
+
+  16 Feb 2012; Mike Gilbert <floppym@gentoo.org> +chromium-18.0.1025.33.ebuild,
+  -chromium-18.0.1025.1-r1.ebuild, -chromium-18.0.1025.1.ebuild:
+  Version bump for beta channel release.
+
+*chromium-17.0.963.56 (16 Feb 2012)
+
+  16 Feb 2012; Mike Gilbert <floppym@gentoo.org> +chromium-17.0.963.56.ebuild:
+  Version bump for stable channel release.
+
+  13 Feb 2012; Mike Gilbert <floppym@gentoo.org> chromium-18.0.1025.11.ebuild,
+  chromium-19.0.1036.7.ebuild, chromium-9999-r1.ebuild:
+  Per dberkholz, depend on >=libwebp-0.1.3 for WEBP_MAX_DIMENSION.
 
 *chromium-19.0.1036.7 (11 Feb 2012)
 
