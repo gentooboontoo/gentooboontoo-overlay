@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-19.0.1041.0.ebuild,v 1.1 2012/02/17 15:24:15 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-18.0.1025.45.ebuild,v 1.1 2012/03/01 02:46:33 floppym Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -30,7 +30,7 @@ RDEPEND="app-arch/bzip2
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.9.4
+	>=dev-lang/v8-3.8.9.4
 	dev-libs/dbus-glib
 	dev-libs/elfutils
 	>=dev-libs/icu-4.4.1
@@ -42,7 +42,7 @@ RDEPEND="app-arch/bzip2
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
 	>=media-libs/alsa-lib-1.0.19
 	media-libs/flac
-	>=media-libs/libjpeg-turbo-1.2.0-r1
+	virtual/jpeg
 	media-libs/libpng
 	>=media-libs/libwebp-0.1.3
 	media-libs/speex
@@ -186,6 +186,19 @@ src_prepare() {
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
 		chrome/common/zip*.cc || die
 
+	# Revert WebKit changeset responsible for Gentoo bug #393471.
+	epatch "${FILESDIR}/${PN}-revert-jpeg-swizzle-r2.patch"
+
+	# Prevent gyp failures caused by target type 'settings' instead of 'none'.
+	epatch "${FILESDIR}/${PN}-gyp-settings-r0.patch"
+
+	# Prevent compilation failures caused by missing zlib #include
+	# and dependency.
+	epatch "${FILESDIR}/${PN}-webkit-zlib-r0.patch"
+
+	# Fix crashes on illegal instructions, bug #401537.
+	epatch "${FILESDIR}/${PN}-media-no-sse-r0.patch"
+
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
@@ -297,11 +310,6 @@ src_configure() {
 		-Dlinux_sandbox_path=${CHROMIUM_HOME}/chrome_sandbox
 		-Dlinux_sandbox_chrome_path=${CHROMIUM_HOME}/chrome"
 
-	# Never use bundled gold binary. Disable gold linker flags for now.
-	myconf+="
-		-Dlinux_use_gold_binary=0
-		-Dlinux_use_gold_flags=0"
-
 	# if host-is-pax; then
 	#	# Prevent the build from failing (bug #301880). The performance
 	#	# difference is very small.
@@ -384,9 +392,8 @@ src_test() {
 
 	# NetUtilTest: bug #361885.
 	# DnsConfigServiceTest.GetSystemConfig: bug #394883.
-	# CertDatabaseNSSTest.ImportServerCert_SelfSigned: bug #399269.
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/net_unittests virtualmake \
-		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig:CertDatabaseNSSTest.ImportServerCert_SelfSigned'
+		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig'
 
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/printing_unittests virtualmake
 }
