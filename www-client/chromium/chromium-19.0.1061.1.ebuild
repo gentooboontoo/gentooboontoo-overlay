@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-17.0.963.56.ebuild,v 1.3 2012/02/17 11:14:45 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-19.0.1061.1.ebuild,v 1.1 2012/03/09 06:51:22 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -14,12 +14,12 @@ SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="bindist cups custom-cflags gnome gnome-keyring kerberos pulseaudio"
 
 # en_US is ommitted on purpose from the list below. It must always be available.
 LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he hi hr
-hu id it ja kn ko lt lv ml mr nb nl pl pt_BR pt_PT ro ru sk sl sr sv sw ta te th
+hu id it ja kn ko lt lv ml mr ms nb nl pl pt_BR pt_PT ro ru sk sl sr sv sw ta te th
 tr uk vi zh_CN zh_TW"
 for lang in ${LANGS}; do
 	IUSE+=" linguas_${lang}"
@@ -30,7 +30,7 @@ RDEPEND="app-arch/bzip2
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.7.6
+	>=dev-lang/v8-3.9.13
 	dev-libs/dbus-glib
 	dev-libs/elfutils
 	>=dev-libs/icu-4.4.1
@@ -42,11 +42,12 @@ RDEPEND="app-arch/bzip2
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
 	>=media-libs/alsa-lib-1.0.19
 	media-libs/flac
-	virtual/jpeg
+	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
-	>=media-libs/libwebp-0.1.2
+	>=media-libs/libwebp-0.1.3
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
+	sys-fs/udev
 	sys-libs/zlib
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
@@ -63,7 +64,9 @@ DEPEND="${RDEPEND}
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
-	test? ( dev-python/pyftpdlib )"
+	test? (
+		dev-python/pyftpdlib
+	)"
 RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
@@ -185,20 +188,12 @@ src_prepare() {
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
 		chrome/common/zip*.cc || die
 
-	# Revert WebKit changeset responsible for Gentoo bug #393471.
-	epatch "${FILESDIR}/${PN}-revert-jpeg-swizzle-r0.patch"
-
-	# Backport upstream fix for Gentoo bug #389479.
-	epatch "${FILESDIR}/${PN}-dev-shm-r0.patch"
-
-	# Fix crashes on illegal instructions, bug #401537.
-	epatch "${FILESDIR}/${PN}-media-no-sse-r0.patch"
-
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
 		\! -path 'third_party/WebKit/*' \
+		\! -path 'third_party/adobe/*' \
 		\! -path 'third_party/angle/*' \
 		\! -path 'third_party/cacheinvalidation/*' \
 		\! -path 'third_party/cld/*' \
@@ -210,13 +205,16 @@ src_prepare() {
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/iccjpeg/*' \
 		\! -path 'third_party/jsoncpp/*' \
+		\! -path 'third_party/json_minify/*' \
 		\! -path 'third_party/khronos/*' \
 		\! -path 'third_party/launchpad_translations/*' \
 		\! -path 'third_party/leveldb/*' \
 		\! -path 'third_party/leveldatabase/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
+		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libvpx/*' \
+		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
@@ -303,6 +301,11 @@ src_configure() {
 		-Dlinux_sandbox_path=${CHROMIUM_HOME}/chrome_sandbox
 		-Dlinux_sandbox_chrome_path=${CHROMIUM_HOME}/chrome"
 
+	# Never use bundled gold binary. Disable gold linker flags for now.
+	myconf+="
+		-Dlinux_use_gold_binary=0
+		-Dlinux_use_gold_flags=0"
+
 	# if host-is-pax; then
 	#	# Prevent the build from failing (bug #301880). The performance
 	#	# difference is very small.
@@ -384,12 +387,10 @@ src_test() {
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/media_unittests virtualmake
 
 	# NetUtilTest: bug #361885.
-	# NetUtilTest.GenerateFileName: some locale-related mismatch.
-	# UDP: unstable, active development. We should revisit this later.
-	# CertDatabaseNSSTest.ImportCACertHierarchyTree: works in 18.x, broken here.
+	# DnsConfigServiceTest.GetSystemConfig: bug #394883.
 	# CertDatabaseNSSTest.ImportServerCert_SelfSigned: bug #399269.
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/net_unittests virtualmake \
-		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:NetUtilTest.GenerateFileName:*UDP*:CertDatabaseNSSTest.ImportCACertHierarchyTree:CertDatabaseNSSTest.ImportServerCert_SelfSigned'
+		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig:CertDatabaseNSSTest.ImportServerCert_SelfSigned'
 
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/printing_unittests virtualmake
 }
