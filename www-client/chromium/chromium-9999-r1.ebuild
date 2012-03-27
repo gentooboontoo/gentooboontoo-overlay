@@ -177,7 +177,6 @@ src_prepare() {
 		\! -path 'third_party/harfbuzz/*' \
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/iccjpeg/*' \
-		\! -path 'third_party/json_minify/*' \
 		\! -path 'third_party/jsoncpp/*' \
 		\! -path 'third_party/json_minify/*' \
 		\! -path 'third_party/khronos/*' \
