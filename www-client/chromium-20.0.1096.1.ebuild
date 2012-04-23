@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-18.0.1025.142.ebuild,v 1.3 2012/03/28 21:38:42 rich0 Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-20.0.1096.1.ebuild,v 1.2 2012/04/22 20:08:00 floppym Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -18,18 +18,19 @@ SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 x86"
-IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio"
+KEYWORDS="~amd64 ~x86"
+IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux"
 
 RDEPEND="app-arch/bzip2
 	cups? (
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.8.9.4
+	>=dev-lang/v8-3.9.13
 	dev-libs/dbus-glib
 	dev-libs/elfutils
 	>=dev-libs/icu-4.4.1
+	<dev-libs/icu-49
 	>=dev-libs/libevent-1.4.13
 	dev-libs/libxml2[icu]
 	dev-libs/libxslt
@@ -38,7 +39,7 @@ RDEPEND="app-arch/bzip2
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
 	>=media-libs/alsa-lib-1.0.19
 	media-libs/flac
-	virtual/jpeg
+	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
 	>=media-libs/libwebp-0.1.3
 	media-libs/speex
@@ -49,24 +50,28 @@ RDEPEND="app-arch/bzip2
 	x11-libs/libXinerama
 	x11-libs/libXScrnSaver
 	x11-libs/libXtst
-	kerberos? ( virtual/krb5 )"
+	kerberos? ( virtual/krb5 )
+	selinux? ( sys-libs/libselinux )"
 DEPEND="${RDEPEND}
 	>=dev-lang/nacl-toolchain-newlib-0_p7311
 	dev-lang/perl
 	dev-lang/yasm
+	dev-python/ply
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
 	>=dev-util/pkgconfig-0.23
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
-	test? ( dev-python/pyftpdlib )"
+	test? (
+		dev-python/pyftpdlib
+	)"
 RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
 
-if ! has chromium-pkg_die ${EBUILD_DEATH_HOOKS}; then
+if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
 	EBUILD_DEATH_HOOKS+=" chromium_pkg_die";
 fi
 
@@ -103,27 +108,14 @@ src_prepare() {
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
 		chrome/common/zip*.cc || die
 
-	# Revert WebKit changeset responsible for Gentoo bug #393471.
-	epatch "${FILESDIR}/${PN}-revert-jpeg-swizzle-r2.patch"
-
-	# Prevent gyp failures caused by target type 'settings' instead of 'none'.
-	epatch "${FILESDIR}/${PN}-gyp-settings-r0.patch"
-
-	# Prevent compilation failures caused by missing zlib #include
-	# and dependency.
-	epatch "${FILESDIR}/${PN}-webkit-zlib-r0.patch"
-
-	# Fix crashes on illegal instructions, bug #401537.
-	epatch "${FILESDIR}/${PN}-media-no-sse-r0.patch"
-
-	# Backport fix for bug #395773.
-	epatch "${FILESDIR}/${PN}-glib-r0.patch"
+	epatch "${FILESDIR}/${PN}-selinux-r0.patch"
 
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
 		\! -path 'third_party/WebKit/*' \
+		\! -path 'third_party/adobe/*' \
 		\! -path 'third_party/angle/*' \
 		\! -path 'third_party/cacheinvalidation/*' \
 		\! -path 'third_party/cld/*' \
@@ -135,6 +127,7 @@ src_prepare() {
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/iccjpeg/*' \
 		\! -path 'third_party/jsoncpp/*' \
+		\! -path 'third_party/json_minify/*' \
 		\! -path 'third_party/khronos/*' \
 		\! -path 'third_party/launchpad_translations/*' \
 		\! -path 'third_party/leveldb/*' \
@@ -223,22 +216,20 @@ src_configure() {
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
 		$(gyp_use kerberos use_kerberos)
-		$(gyp_use pulseaudio use_pulseaudio)"
+		$(gyp_use pulseaudio use_pulseaudio)
+		$(gyp_use selinux selinux)"
 
-	# Enable sandbox.
+	if ! use selinux; then
+		# Enable SUID sandbox.
+		myconf+="
+			-Dlinux_sandbox_path=${CHROMIUM_HOME}/chrome_sandbox
+			-Dlinux_sandbox_chrome_path=${CHROMIUM_HOME}/chrome"
+	fi
+
+	# Never use bundled gold binary. Disable gold linker flags for now.
 	myconf+="
-		-Dlinux_sandbox_path=${CHROMIUM_HOME}/chrome_sandbox
-		-Dlinux_sandbox_chrome_path=${CHROMIUM_HOME}/chrome"
-
-	# if host-is-pax; then
-	#	# Prevent the build from failing (bug #301880). The performance
-	#	# difference is very small.
-	#	myconf+=" -Dv8_use_snapshot=0"
-	# fi
-
-	# Our system ffmpeg should support more codecs than the bundled one
-	# for Chromium.
-	# myconf+=" -Dproprietary_codecs=1"
+		-Dlinux_use_gold_binary=0
+		-Dlinux_use_gold_flags=0"
 
 	if ! use bindist; then
 		# Enable H.624 support in bundled ffmpeg.
@@ -250,12 +241,6 @@ src_configure() {
 		myconf+=" -Dtarget_arch=x64"
 	elif [[ $myarch = x86 ]] ; then
 		myconf+=" -Dtarget_arch=ia32"
-	elif [[ $myarch = arm ]] ; then
-		# TODO: check this again after
-		# http://gcc.gnu.org/bugzilla/show_bug.cgi?id=39509 is fixed.
-		append-flags -fno-tree-sink
-
-		myconf+=" -Dtarget_arch=arm -Ddisable_nacl=1 -Dlinux_use_tcmalloc=0"
 	else
 		die "Failed to determine target arch, got '$myarch'."
 	fi
@@ -275,11 +260,32 @@ src_configure() {
 }
 
 src_compile() {
-	emake chrome chrome_sandbox chromedriver BUILDTYPE=Release V=1 || die
+	local test_targets
+	for x in base cacheinvalidation crypto \
+		googleurl gpu media net printing; do
+		test_targets+=" ${x}_unittests"
+	done
+
+	local make_targets="chrome chromedriver"
+	if ! use selinux; then
+		make_targets+=" chrome_sandbox"
+	fi
+	if use test; then
+		make_targets+=$test_targets
+	fi
+
+	# See bug #410883 for more info about the .host mess.
+	emake ${make_targets} BUILDTYPE=Release V=1 \
+		CC.host="$(tc-getCC)" CFLAGS.host="${CFLAGS}" \
+		CXX.host="$(tc-getCXX)" CXXFLAGS.host="${CXXFLAGS}" \
+		LINK.host="$(tc-getCXX)" LDFLAGS.host="${LDFLAGS}" \
+		AR.host="$(tc-getAR)" || die
+
 	pax-mark m out/Release/chrome
 	if use test; then
-		emake {base,cacheinvalidation,crypto,googleurl,gpu,media,net,printing}_unittests BUILDTYPE=Release V=1 || die
-		pax-mark m out/Release/{base,cacheinvalidation,crypto,googleurl,gpu,media,net,printing}_unittests
+		for x in $test_targets; do
+			pax-mark m out/Release/${x}
+		done
 	fi
 }
 
@@ -322,8 +328,11 @@ src_test() {
 src_install() {
 	exeinto "${CHROMIUM_HOME}"
 	doexe out/Release/chrome || die
-	doexe out/Release/chrome_sandbox || die
-	fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
+
+	if ! use selinux; then
+		doexe out/Release/chrome_sandbox || die
+		fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
+	fi
 
 	doexe out/Release/chromedriver || die
 

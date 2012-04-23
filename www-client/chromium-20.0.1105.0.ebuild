@@ -1,11 +1,15 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-17.0.963.83.ebuild,v 1.3 2012/03/23 15:44:32 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-20.0.1105.0.ebuild,v 1.3 2012/04/22 20:08:00 floppym Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
 
-inherit eutils fdo-mime flag-o-matic gnome2-utils linux-info multilib \
+CHROMIUM_LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he
+	hi hr hu id it ja kn ko lt lv ml mr ms nb nl pl pt_BR pt_PT ro ru sk sl sr
+	sv sw ta te th tr uk vi zh_CN zh_TW"
+
+inherit chromium eutils flag-o-matic multilib \
 	pax-utils portability python toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
@@ -14,26 +18,19 @@ SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 x86"
-IUSE="bindist cups custom-cflags gnome gnome-keyring kerberos pulseaudio"
-
-# en_US is ommitted on purpose from the list below. It must always be available.
-LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he hi hr
-hu id it ja kn ko lt lv ml mr nb nl pl pt_BR pt_PT ro ru sk sl sr sv sw ta te th
-tr uk vi zh_CN zh_TW"
-for lang in ${LANGS}; do
-	IUSE+=" linguas_${lang}"
-done
+KEYWORDS="~amd64 ~x86"
+IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux"
 
 RDEPEND="app-arch/bzip2
 	cups? (
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.7.6
+	>=dev-lang/v8-3.10.2.1
 	dev-libs/dbus-glib
 	dev-libs/elfutils
 	>=dev-libs/icu-4.4.1
+	<dev-libs/icu-49
 	>=dev-libs/libevent-1.4.13
 	dev-libs/libxml2[icu]
 	dev-libs/libxslt
@@ -42,108 +39,41 @@ RDEPEND="app-arch/bzip2
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
 	>=media-libs/alsa-lib-1.0.19
 	media-libs/flac
-	virtual/jpeg
+	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
-	>=media-libs/libwebp-0.1.2
+	>=media-libs/libwebp-0.1.3
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
+	sys-fs/udev
 	sys-libs/zlib
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
 	x11-libs/libXScrnSaver
 	x11-libs/libXtst
-	kerberos? ( virtual/krb5 )"
+	kerberos? ( virtual/krb5 )
+	selinux? ( sys-libs/libselinux )"
 DEPEND="${RDEPEND}
 	>=dev-lang/nacl-toolchain-newlib-0_p7311
 	dev-lang/perl
 	dev-lang/yasm
+	dev-python/ply
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
 	>=dev-util/pkgconfig-0.23
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
-	test? ( dev-python/pyftpdlib )"
+	test? (
+		dev-python/pyftpdlib
+	)"
 RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
 
-gyp_use() {
-	if [[ $# -lt 2 ]]; then
-		echo "!!! usage: gyp_use <USEFLAG> <GYPFLAG>" >&2
-		return 1
-	fi
-	if use "$1"; then echo "-D$2=1"; else echo "-D$2=0"; fi
-}
-
-egyp() {
-	set -- build/gyp_chromium --depth=. "${@}"
-	echo "${@}" >&2
-	"${@}"
-}
-
-# Chromium uses different names for some langs,
-# return Chromium name corresponding to a Gentoo lang.
-chromium_lang() {
-	if [[ "$1" == "es_LA" ]]; then
-		echo "es_419"
-	else
-		echo "$1"
-	fi
-}
-
-get_bundled_v8_version() {
-	"$(PYTHON -2)" "${FILESDIR}"/extract_v8_version.py v8/src/version.cc
-}
-
-get_installed_v8_version() {
-	best_version dev-lang/v8 | sed -e 's@dev-lang/v8-@@g'
-}
-
-if ! has chromium-pkg_die ${EBUILD_DEATH_HOOKS}; then
-	EBUILD_DEATH_HOOKS+=" chromium-pkg_die";
+if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
+	EBUILD_DEATH_HOOKS+=" chromium_pkg_die";
 fi
-
-chromium-pkg_die() {
-	if [[ "${EBUILD_PHASE}" != "compile" ]]; then
-		return
-	fi
-
-	# Prevent user problems like bug #348235.
-	eshopts_push -s extglob
-	if is-flagq '-g?(gdb)?([1-9])'; then
-		ewarn
-		ewarn "You have enabled debug info (i.e. -g or -ggdb in your CFLAGS/CXXFLAGS)."
-		ewarn "Please try removing -g{,gdb} before reporting a bug."
-		ewarn
-	fi
-	eshopts_pop
-
-	# ccache often causes bogus compile failures, especially when the cache gets
-	# corrupted.
-	if has ccache ${FEATURES}; then
-		ewarn
-		ewarn "You have enabled ccache. Please try disabling ccache"
-		ewarn "before reporting a bug."
-		ewarn
-	fi
-
-	# No ricer bugs.
-	if use custom-cflags; then
-		ewarn
-		ewarn "You have enabled the custom-cflags USE flag."
-		ewarn "Please disable it before reporting a bug."
-		ewarn
-	fi
-
-	# If the system doesn't have enough memory, the compilation is known to
-	# fail. Print info about memory to recognize this condition.
-	einfo
-	einfo "$(grep MemTotal /proc/meminfo)"
-	einfo "$(grep SwapTotal /proc/meminfo)"
-	einfo
-}
 
 pkg_setup() {
 	if [[ "${SLOT}" == "0" ]]; then
@@ -160,14 +90,7 @@ pkg_setup() {
 	python_set_active_version 2
 	python_pkg_setup
 
-	if [[ "${MERGE_TYPE}" == "source" || "${MERGE_TYPE}" == "binary" ]]; then
-		# Fail if the kernel doesn't support features needed for sandboxing,
-		# bug #363907.
-		ERROR_PID_NS="PID_NS is required for sandbox to work"
-		ERROR_NET_NS="NET_NS is required for sandbox to work"
-		CONFIG_CHECK="~PID_NS ~NET_NS"
-		check_extra_config
-	fi
+	chromium_check_kernel_config
 
 	if use bindist; then
 		elog "bindist enabled: H.264 video support will be disabled."
@@ -185,20 +108,12 @@ src_prepare() {
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
 		chrome/common/zip*.cc || die
 
-	# Revert WebKit changeset responsible for Gentoo bug #393471.
-	epatch "${FILESDIR}/${PN}-revert-jpeg-swizzle-r0.patch"
-
-	# Backport upstream fix for Gentoo bug #389479.
-	epatch "${FILESDIR}/${PN}-dev-shm-r0.patch"
-
-	# Fix crashes on illegal instructions, bug #401537.
-	epatch "${FILESDIR}/${PN}-media-no-sse-r0.patch"
-
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
 		\! -path 'third_party/WebKit/*' \
+		\! -path 'third_party/adobe/*' \
 		\! -path 'third_party/angle/*' \
 		\! -path 'third_party/cacheinvalidation/*' \
 		\! -path 'third_party/cld/*' \
@@ -210,13 +125,16 @@ src_prepare() {
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/iccjpeg/*' \
 		\! -path 'third_party/jsoncpp/*' \
+		\! -path 'third_party/json_minify/*' \
 		\! -path 'third_party/khronos/*' \
 		\! -path 'third_party/launchpad_translations/*' \
 		\! -path 'third_party/leveldb/*' \
 		\! -path 'third_party/leveldatabase/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
+		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libvpx/*' \
+		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
@@ -241,8 +159,8 @@ src_prepare() {
 		\! -path 'third_party/zlib/contrib/minizip/*' \
 		-delete || die
 
-	local v8_bundled="$(get_bundled_v8_version)"
-	local v8_installed="$(get_installed_v8_version)"
+	local v8_bundled="$(chromium_bundled_v8_version)"
+	local v8_installed="$(chromium_installed_v8_version)"
 	elog "V8 version: bundled - ${v8_bundled}; installed - ${v8_installed}"
 
 	# Remove bundled v8.
@@ -296,22 +214,20 @@ src_configure() {
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
 		$(gyp_use kerberos use_kerberos)
-		$(gyp_use pulseaudio use_pulseaudio)"
+		$(gyp_use pulseaudio use_pulseaudio)
+		$(gyp_use selinux selinux)"
 
-	# Enable sandbox.
+	if ! use selinux; then
+		# Enable SUID sandbox.
+		myconf+="
+			-Dlinux_sandbox_path=${CHROMIUM_HOME}/chrome_sandbox
+			-Dlinux_sandbox_chrome_path=${CHROMIUM_HOME}/chrome"
+	fi
+
+	# Never use bundled gold binary. Disable gold linker flags for now.
 	myconf+="
-		-Dlinux_sandbox_path=${CHROMIUM_HOME}/chrome_sandbox
-		-Dlinux_sandbox_chrome_path=${CHROMIUM_HOME}/chrome"
-
-	# if host-is-pax; then
-	#	# Prevent the build from failing (bug #301880). The performance
-	#	# difference is very small.
-	#	myconf+=" -Dv8_use_snapshot=0"
-	# fi
-
-	# Our system ffmpeg should support more codecs than the bundled one
-	# for Chromium.
-	# myconf+=" -Dproprietary_codecs=1"
+		-Dlinux_use_gold_binary=0
+		-Dlinux_use_gold_flags=0"
 
 	if ! use bindist; then
 		# Enable H.624 support in bundled ffmpeg.
@@ -323,12 +239,6 @@ src_configure() {
 		myconf+=" -Dtarget_arch=x64"
 	elif [[ $myarch = x86 ]] ; then
 		myconf+=" -Dtarget_arch=ia32"
-	elif [[ $myarch = arm ]] ; then
-		# TODO: check this again after
-		# http://gcc.gnu.org/bugzilla/show_bug.cgi?id=39509 is fixed.
-		append-flags -fno-tree-sink
-
-		myconf+=" -Dtarget_arch=arm -Ddisable_nacl=1 -Dlinux_use_tcmalloc=0"
 	else
 		die "Failed to determine target arch, got '$myarch'."
 	fi
@@ -344,15 +254,36 @@ src_configure() {
 		strip-flags
 	fi
 
-	egyp ${myconf} || die
+	egyp_chromium ${myconf} || die
 }
 
 src_compile() {
-	emake chrome chrome_sandbox chromedriver BUILDTYPE=Release V=1 || die
+	local test_targets
+	for x in base cacheinvalidation crypto \
+		googleurl gpu media net printing; do
+		test_targets+=" ${x}_unittests"
+	done
+
+	local make_targets="chrome chromedriver"
+	if ! use selinux; then
+		make_targets+=" chrome_sandbox"
+	fi
+	if use test; then
+		make_targets+=$test_targets
+	fi
+
+	# See bug #410883 for more info about the .host mess.
+	emake ${make_targets} BUILDTYPE=Release V=1 \
+		CC.host="$(tc-getCC)" CFLAGS.host="${CFLAGS}" \
+		CXX.host="$(tc-getCXX)" CXXFLAGS.host="${CXXFLAGS}" \
+		LINK.host="$(tc-getCXX)" LDFLAGS.host="${LDFLAGS}" \
+		AR.host="$(tc-getAR)" || die
+
 	pax-mark m out/Release/chrome
 	if use test; then
-		emake {base,cacheinvalidation,crypto,googleurl,gpu,media,net,printing}_unittests BUILDTYPE=Release V=1 || die
-		pax-mark m out/Release/{base,cacheinvalidation,crypto,googleurl,gpu,media,net,printing}_unittests
+		for x in $test_targets; do
+			pax-mark m out/Release/${x}
+		done
 	fi
 }
 
@@ -384,12 +315,10 @@ src_test() {
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/media_unittests virtualmake
 
 	# NetUtilTest: bug #361885.
-	# NetUtilTest.GenerateFileName: some locale-related mismatch.
-	# UDP: unstable, active development. We should revisit this later.
-	# CertDatabaseNSSTest.ImportCACertHierarchyTree: works in 18.x, broken here.
+	# DnsConfigServiceTest.GetSystemConfig: bug #394883.
 	# CertDatabaseNSSTest.ImportServerCert_SelfSigned: bug #399269.
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/net_unittests virtualmake \
-		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:NetUtilTest.GenerateFileName:*UDP*:CertDatabaseNSSTest.ImportCACertHierarchyTree:CertDatabaseNSSTest.ImportServerCert_SelfSigned:KeygenHandlerTest.*'
+		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig:CertDatabaseNSSTest.ImportServerCert_SelfSigned'
 
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/printing_unittests virtualmake
 }
@@ -397,8 +326,11 @@ src_test() {
 src_install() {
 	exeinto "${CHROMIUM_HOME}"
 	doexe out/Release/chrome || die
-	doexe out/Release/chrome_sandbox || die
-	fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
+
+	if ! use selinux; then
+		doexe out/Release/chrome_sandbox || die
+		fperms 4755 "${CHROMIUM_HOME}/chrome_sandbox"
+	fi
 
 	doexe out/Release/chromedriver || die
 
@@ -438,43 +370,9 @@ src_install() {
 	insinto /etc/chromium
 	newins "${FILESDIR}/chromium.default" "default" || die
 
-	# Support LINGUAS, bug #332751.
-	local pak
-	for pak in out/Release/locales/*.pak; do
-		local pakbasename="$(basename ${pak})"
-		local pakname="${pakbasename%.pak}"
-		local langname="${pakname//-/_}"
-
-		# Do not issue warning for en_US locale. This is the fallback
-		# locale so it should always be installed.
-		if [[ "${langname}" == "en_US" ]]; then
-			continue
-		fi
-
-		local found=false
-		local lang
-		for lang in ${LANGS}; do
-			local crlang="$(chromium_lang ${lang})"
-			if [[ "${langname}" == "${crlang}" ]]; then
-				found=true
-				break
-			fi
-		done
-		if ! $found; then
-			ewarn "LINGUAS warning: no ${langname} in LANGS"
-		fi
-	done
-	local lang
-	for lang in ${LANGS}; do
-		local crlang="$(chromium_lang ${lang})"
-		local pakfile="out/Release/locales/${crlang//_/-}.pak"
-		if [ ! -f "${pakfile}" ]; then
-			ewarn "LINGUAS warning: no .pak file for ${lang} (${pakfile} not found)"
-		fi
-		if ! use linguas_${lang}; then
-			rm "${pakfile}" || die
-		fi
-	done
+	pushd out/Release/locales > /dev/null || die
+	chromium_remove_language_paks
+	popd
 
 	insinto "${CHROMIUM_HOME}"
 	doins out/Release/chrome.pak || die
@@ -519,42 +417,4 @@ src_install() {
 				"${ED}"/usr/share/gnome-control-center/default-apps/chromium-browser${CHROMIUM_SUFFIX}.xml
 		fi
 	fi
-}
-
-pkg_preinst() {
-	gnome2_icon_savelist
-}
-
-pkg_postinst() {
-	fdo-mime_desktop_database_update
-	gnome2_icon_cache_update
-
-	# For more info see bug #292201, bug #352263, bug #361859.
-	elog
-	elog "Depending on your desktop environment, you may need"
-	elog "to install additional packages to get icons on the Downloads page."
-	elog
-	elog "For KDE, the required package is kde-base/oxygen-icons."
-	elog
-	elog "For other desktop environments, try one of the following:"
-	elog " - x11-themes/gnome-icon-theme"
-	elog " - x11-themes/tango-icon-theme"
-
-	# For more info see bug #359153.
-	elog
-	elog "Some web pages may require additional fonts to display properly."
-	elog "Try installing some of the following packages if some characters"
-	elog "are not displayed properly:"
-	elog " - media-fonts/arphicfonts"
-	elog " - media-fonts/bitstream-cyberbit"
-	elog " - media-fonts/droid"
-	elog " - media-fonts/ipamonafont"
-	elog " - media-fonts/ja-ipafonts"
-	elog " - media-fonts/takao-fonts"
-	elog " - media-fonts/wqy-microhei"
-	elog " - media-fonts/wqy-zenhei"
-}
-
-pkg_postrm() {
-	gnome2_icon_cache_update
 }

@@ -1,6 +1,93 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2012 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.599 2012/03/29 11:35:05 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.615 2012/04/23 08:19:18 phajdan.jr Exp $
+
+  23 Apr 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org> chromium-9999-r1.ebuild:
+  Apply the latest two updates to the live ebuild.
+
+  22 Apr 2012; Mike Gilbert <floppym@gentoo.org> chromium-19.0.1084.24.ebuild,
+  chromium-19.0.1084.30.ebuild, chromium-20.0.1096.1.ebuild,
+  chromium-20.0.1105.0.ebuild:
+  Depend on <dev-libs/icu-49 in beta and dev channel.
+
+  22 Apr 2012; Mike Gilbert <floppym@gentoo.org> chromium-20.0.1105.0.ebuild:
+  Update v8 dependency per bug 413127.
+
+*chromium-19.0.1084.30 (19 Apr 2012)
+
+  19 Apr 2012; Mike Gilbert <floppym@gentoo.org> +chromium-19.0.1084.30.ebuild,
+  -chromium-19.0.1084.15.ebuild:
+  Version bump for beta channel release.
+
+*chromium-20.0.1105.0 (18 Apr 2012)
+
+  18 Apr 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-20.0.1105.0.ebuild:
+  Version bump for dev channel release.
+
+*chromium-19.0.1084.24 (14 Apr 2012)
+
+  14 Apr 2012; Mike Gilbert <floppym@gentoo.org> +chromium-19.0.1084.24.ebuild,
+  -chromium-19.0.1084.1.ebuild:
+  Version bump for beta channel release.
+
+*chromium-18.0.1025.162 (13 Apr 2012)
+
+  13 Apr 2012; Mike Gilbert <floppym@gentoo.org> +chromium-18.0.1025.162.ebuild:
+  Version bump for stable channel release.
+
+  11 Apr 2012; Mike Gilbert <floppym@gentoo.org> -files/chromium-cups-r0.patch,
+  -files/chromium-dev-shm-r0.patch, -files/chromium-icu-compatibility-r0.patch,
+  -files/chromium-kerberos-r0.patch,
+  -files/chromium-revert-jpeg-swizzle-r0.patch,
+  -files/chromium-revert-jpeg-swizzle-r1.patch,
+  -files/chromium-system-libevent-r0.patch, -files/extract_v8_version.py,
+  -files/nacl.gypi:
+  Remove unused files.
+
+*chromium-20.0.1096.1 (11 Apr 2012)
+
+  11 Apr 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-selinux-r0.patch, +chromium-20.0.1096.1.ebuild,
+  chromium-9999-r1.ebuild:
+  Version bump for dev channel release. Experimental SELinux sandbox support
+  (no policy yet).
+
+*chromium-19.0.1084.15 (10 Apr 2012)
+
+  10 Apr 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-18.0.1025.142.ebuild, -chromium-19.0.1081.2.ebuild,
+  +chromium-19.0.1084.15.ebuild, chromium-9999-r1.ebuild:
+  Version bump for dev channel release. Attempt to fix bug #410883 by Str4nger.
+  Remove old.
+
+  07 Apr 2012; Andreas Schuerch <nativemad@gentoo.org>
+  chromium-18.0.1025.151.ebuild:
+  x86 stable, see bug 410963
+
+  05 Apr 2012; Richard Freeman <rich0@gentoo.org>
+  chromium-18.0.1025.151.ebuild:
+  amd64 stable - 410963
+
+*chromium-18.0.1025.151 (05 Apr 2012)
+
+  05 Apr 2012; Mike Gilbert <floppym@gentoo.org> +chromium-18.0.1025.151.ebuild:
+  Version bump for stable channel release.
+
+  04 Apr 2012; Mike Gilbert <floppym@gentoo.org> -chromium-17.0.963.83.ebuild,
+  -chromium-18.0.1025.140.ebuild, chromium-18.0.1025.142.ebuild:
+  Depend on <dev-libs/icu-49 for bug 410777. Remove old.
+
+*chromium-19.0.1084.1 (02 Apr 2012)
+
+  02 Apr 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-19.0.1077.3.ebuild, +chromium-19.0.1084.1.ebuild:
+  Version bump for dev channel release.
+
+  01 Apr 2012; Mike Gilbert <floppym@gentoo.org> chromium-18.0.1025.140.ebuild,
+  chromium-18.0.1025.142.ebuild, chromium-19.0.1077.3.ebuild,
+  chromium-19.0.1081.2.ebuild, chromium-9999-r1.ebuild:
+  Fix typo in death hook check.
 
 *chromium-19.0.1081.2 (29 Mar 2012)
 
