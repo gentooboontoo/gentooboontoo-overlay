@@ -83,6 +83,7 @@ gclient_config() {
 gclient_sync() {
 	einfo "gclient sync -->"
 	[[ -n "${ESVN_UMASK}" ]] && eumask_push "${ESVN_UMASK}"
+	# Only use a single job to prevent hangs.
 	"${WORKDIR}/depot_tools/gclient" sync --nohooks --jobs=16 \
 		--delete_unversioned_trees || die
 	[[ -n "${ESVN_UMASK}" ]] && eumask_pop
