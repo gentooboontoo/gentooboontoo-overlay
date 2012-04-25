@@ -30,7 +30,6 @@ RDEPEND="app-arch/bzip2
 	dev-libs/dbus-glib
 	dev-libs/elfutils
 	>=dev-libs/icu-4.4.1
-	<dev-libs/icu-49
 	>=dev-libs/libevent-1.4.13
 	dev-libs/libxml2[icu]
 	dev-libs/libxslt
