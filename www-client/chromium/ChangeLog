@@ -1,6 +1,42 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2012 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.621 2012/05/03 02:02:09 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.627 2012/05/07 18:01:32 floppym Exp $
+
+  07 May 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-18.0.1025.168.ebuild:
+  Fix 18.x dependencies, noticed by floppym and Arfrever.
+
+  07 May 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-18.0.1025.168.ebuild, chromium-19.0.1084.36.ebuild,
+  chromium-19.0.1084.41.ebuild, chromium-20.0.1123.2.ebuild,
+  chromium-20.0.1123.4.ebuild, chromium-9999-r1.ebuild:
+  Adjust dependencies for fixed dev-libs/icu (bug #410777 by biohazrd). Thanks
+  to Heiko Przybyl for finding relevant ICU bug report and patch, Arfrever
+  Frehtes Taifersar Arahesis for providing updated dev-libs/icu ebuild, Markos
+  Chandras for committing the icu ebuild, Mike Gilbert (floppym) for initial
+  bug response and testing the fix.
+
+*chromium-20.0.1123.4 (05 May 2012)
+
+  05 May 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-svnversion-r0.patch, -chromium-20.0.1115.1.ebuild,
+  +chromium-20.0.1123.4.ebuild, chromium-9999-r1.ebuild:
+  Version bump for dev channel release. Fix build when subversion is not
+  installed. Ebuild cleanups. Remove old.
+
+*chromium-20.0.1123.2 (03 May 2012)
+
+  03 May 2012; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-18.0.1025.151.ebuild, -chromium-18.0.1025.162.ebuild,
+  -chromium-20.0.1105.0.ebuild, +chromium-20.0.1123.2.ebuild:
+  Version bump for dev channel release. Remove old.
+
+  03 May 2012; Jeff Horelick <jdhore@gentoo.org> chromium-18.0.1025.151.ebuild,
+  chromium-18.0.1025.162.ebuild, chromium-18.0.1025.168.ebuild,
+  chromium-19.0.1084.36.ebuild, chromium-19.0.1084.41.ebuild,
+  chromium-20.0.1105.0.ebuild, chromium-20.0.1115.1.ebuild,
+  chromium-9999-r1.ebuild:
+  dev-util/pkgconfig -> virtual/pkgconfig
 
 *chromium-19.0.1084.41 (03 May 2012)
 

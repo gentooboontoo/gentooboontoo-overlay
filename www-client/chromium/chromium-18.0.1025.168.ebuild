@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-18.0.1025.168.ebuild,v 1.3 2012/05/02 08:05:15 ago Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-18.0.1025.168.ebuild,v 1.6 2012/05/07 17:59:18 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -30,7 +30,6 @@ RDEPEND="app-arch/bzip2
 	dev-libs/dbus-glib
 	dev-libs/elfutils
 	>=dev-libs/icu-4.4.1
-	<dev-libs/icu-49
 	>=dev-libs/libevent-1.4.13
 	dev-libs/libxml2[icu]
 	dev-libs/libxslt
@@ -57,10 +56,10 @@ DEPEND="${RDEPEND}
 	dev-lang/yasm
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
-	>=dev-util/pkgconfig-0.23
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
+	virtual/pkgconfig
 	test? ( dev-python/pyftpdlib )"
 RDEPEND+="
 	!=www-client/chromium-9999
