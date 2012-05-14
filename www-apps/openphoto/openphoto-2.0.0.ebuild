@@ -17,4 +17,14 @@ IUSE=""
 DEPEND=""
 RDEPEND="${DEPEND}
 	dev-lang/php[crypt,curl,gd]
-	virtual/httpd-php"
+	virtual/httpd-php
+	virtual/mysql"
+
+src_install() {
+	webapp_src_preinst
+
+	insinto "${MY_HTDOCSDIR}"
+	doins src
+
+	webapp_src_install
+}
