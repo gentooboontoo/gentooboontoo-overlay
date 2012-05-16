@@ -31,6 +31,7 @@ RDEPEND="app-arch/bzip2
 	dev-libs/elfutils
 	>=dev-libs/icu-49.1.1-r1
 	>=dev-libs/libevent-1.4.13
+	dev-libs/libusb:1
 	dev-libs/libxml2[icu]
 	dev-libs/libxslt
 	>=dev-libs/nss-3.12.3
@@ -186,7 +187,7 @@ src_prepare() {
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
 		\! -path 'third_party/libsrtp/*' \
-		\! -path 'third_party/libusb/*' \
+		\! -path 'third_party/libusb/libusb.h' \
 		\! -path 'third_party/libvpx/*' \
 		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
@@ -252,6 +253,7 @@ src_configure() {
 		-Duse_system_libevent=1
 		-Duse_system_libjpeg=1
 		-Duse_system_libpng=1
+		-Duse_system_libusb=1
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
 		-Duse_system_speex=1
