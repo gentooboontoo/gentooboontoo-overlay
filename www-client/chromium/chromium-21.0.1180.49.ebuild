@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.125 2012/07/24 03:27:28 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-21.0.1180.49.ebuild,v 1.2 2012/07/22 16:52:26 floppym Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -10,15 +10,15 @@ CHROMIUM_LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he
 	sv sw ta te th tr uk vi zh_CN zh_TW"
 
 inherit chromium eutils flag-o-matic multilib \
-	pax-utils portability python subversion toolchain-funcs versionator virtualx
+	pax-utils portability python toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-ESVN_REPO_URI="http://src.chromium.org/svn/trunk/src"
+SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.bz2"
 
 LICENSE="BSD"
-SLOT="live"
-KEYWORDS=""
+SLOT="0"
+KEYWORDS="~amd64 ~x86"
 IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux"
 
 RDEPEND="app-arch/bzip2
@@ -53,13 +53,14 @@ RDEPEND="app-arch/bzip2
 	kerberos? ( virtual/krb5 )
 	selinux? ( sys-libs/libselinux )"
 DEPEND="${RDEPEND}
-	>=dev-lang/nacl-toolchain-newlib-0_p9093
+	>=dev-lang/nacl-toolchain-newlib-0_p7311
 	dev-lang/perl
 	dev-lang/yasm
 	dev-python/ply
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
 	>=sys-devel/bison-2.4.3
+	<sys-devel/bison-2.6
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
 	virtual/pkgconfig
@@ -70,64 +71,6 @@ RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
-
-gclient_config() {
-	einfo "gclient config -->"
-	# Allow the user to keep their config if they know what they are doing.
-	if ! grep -q KEEP .gclient; then
-		cp -f "${FILESDIR}/dot-gclient" .gclient || die
-	fi
-	cat .gclient || die
-}
-
-gclient_sync() {
-	einfo "gclient sync -->"
-	[[ -n "${ESVN_UMASK}" ]] && eumask_push "${ESVN_UMASK}"
-	# Only use a single job to prevent hangs.
-	"${WORKDIR}/depot_tools/gclient" sync --nohooks --jobs=1 \
-		--delete_unversioned_trees || die
-	[[ -n "${ESVN_UMASK}" ]] && eumask_pop
-}
-
-gclient_runhooks() {
-	# Run all hooks except gyp_chromium.
-	einfo "gclient runhooks -->"
-	cp src/DEPS src/DEPS.orig || die
-	sed -e 's:"python", "src/build/gyp_chromium":"true":' -i src/DEPS || die
-	"${WORKDIR}/depot_tools/gclient" runhooks
-	local ret=$?
-	mv src/DEPS.orig src/DEPS || die
-	[[ ${ret} -eq 0 ]] || die "gclient runhooks failed"
-}
-
-src_unpack() {
-	# First grab depot_tools.
-	ESVN_REVISION= subversion_fetch "http://src.chromium.org/svn/trunk/tools/depot_tools"
-	mv "${S}" "${WORKDIR}"/depot_tools || die
-
-	cd "${ESVN_STORE_DIR}/${PN}" || die
-
-	gclient_config
-	gclient_sync
-
-	# Disabled so that we do not download nacl toolchain.
-	#gclient_runhooks
-
-	# Remove any lingering nacl toolchain files.
-	rm -rf src/native_client/toolchain/linux_x86_newlib
-
-	subversion_wc_info
-
-	mkdir -p "${S}" || die
-	einfo "Copying source to ${S}"
-	rsync -rlpgo --exclude=".svn/" src/ "${S}" || die
-
-	# Display correct svn revision in about box, and log new version.
-	echo "LASTCHANGE=${ESVN_WC_REVISION}" > "${S}"/build/util/LASTCHANGE || die
-
-	. src/chrome/VERSION
-	elog "Installing/updating to version ${MAJOR}.${MINOR}.${BUILD}.${PATCH} (Developer Build ${ESVN_WC_REVISION})"
-}
 
 if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
 	EBUILD_DEATH_HOOKS+=" chromium_pkg_die";
@@ -167,6 +110,9 @@ src_prepare() {
 	sed -i '1i#define OF(x) x' \
 		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.h || die
 
+	# Fix build without NaCl glibc toolchain.
+	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
+
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
@@ -180,7 +126,6 @@ src_prepare() {
 		\! -path 'third_party/gpsd/*' \
 		\! -path 'third_party/harfbuzz/*' \
 		\! -path 'third_party/hunspell/*' \
-		\! -path 'third_party/hyphen/*' \
 		\! -path 'third_party/iccjpeg/*' \
 		\! -path 'third_party/jsoncpp/*' \
 		\! -path 'third_party/khronos/*' \
@@ -190,11 +135,9 @@ src_prepare() {
 		\! -path 'third_party/libphonenumber/*' \
 		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libusb/libusb.h' \
-		\! -path 'third_party/libva/*' \
 		\! -path 'third_party/libvpx/*' \
 		\! -path 'third_party/libwebp/*' \
 		\! -path 'third_party/libxml/chromium/*' \
-		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
 		\! -path 'third_party/mesa/*' \
@@ -204,7 +147,6 @@ src_prepare() {
 		\! -path 'third_party/openmax/*' \
 		\! -path 'third_party/ots/*' \
 		\! -path 'third_party/protobuf/*' \
-		\! -path 'third_party/qcms/*' \
 		\! -path 'third_party/scons-2.0.1/*' \
 		\! -path 'third_party/sfntly/*' \
 		\! -path 'third_party/skia/*' \
@@ -378,32 +320,25 @@ src_test() {
 		die "Tests must be run as non-root. Please use FEATURES=userpriv."
 	fi
 
-	runtest() {
-		local cmd=$1
-		shift
-		einfo "${cmd}" "$@"
-		LC_ALL="${mylocale}" VIRTUALX_COMMAND="${cmd}" virtualmake "$@"
-	}
-
 	# ICUStringConversionsTest: bug #350347.
 	# MessagePumpLibeventTest: bug #398501.
-	runtest out/Release/base_unittests \
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/base_unittests virtualmake \
 		'--gtest_filter=-ICUStringConversionsTest.*:MessagePumpLibeventTest.*'
 
-	runtest out/Release/cacheinvalidation_unittests
-	runtest out/Release/crypto_unittests
-	runtest out/Release/googleurl_unittests
-	runtest out/Release/gpu_unittests
-	runtest out/Release/media_unittests
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/cacheinvalidation_unittests virtualmake
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/crypto_unittests virtualmake
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/googleurl_unittests virtualmake
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/gpu_unittests virtualmake
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/media_unittests virtualmake
 
 	# NetUtilTest: bug #361885.
 	# DnsConfigServiceTest.GetSystemConfig: bug #394883.
 	# CertDatabaseNSSTest.ImportServerCert_SelfSigned: bug #399269.
-	runtest out/Release/net_unittests \
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/net_unittests virtualmake \
 		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig:CertDatabaseNSSTest.ImportServerCert_SelfSigned:URLFetcher*'
 
-	runtest out/Release/printing_unittests
-	runtest out/Release/sql_unittests
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/printing_unittests virtualmake
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/sql_unittests virtualmake
 }
 
 src_install() {
@@ -459,16 +394,11 @@ src_install() {
 	doexe out/Release/libffmpegsumo.so || die
 
 	# Install icons and desktop entry.
-	local branding size
-	for size in 16 22 24 32 48 64 128 256 ; do
-		case ${size} in
-			16|32) branding="chrome/app/theme/default_100_percent/chromium" ;;
-				*) branding="chrome/app/theme/chromium" ;;
-		esac
-		newicon -s ${size} "${branding}/product_logo_${size}.png" \
-			chromium-browser${CHROMIUM_SUFFIX}.png
+	for SIZE in 16 22 24 32 48 64 128 256 ; do
+		insinto /usr/share/icons/hicolor/${SIZE}x${SIZE}/apps
+		newins chrome/app/theme/chromium/product_logo_${SIZE}.png \
+			chromium-browser${CHROMIUM_SUFFIX}.png || die
 	done
-
 	local mime_types="text/html;text/xml;application/xhtml+xml;"
 	mime_types+="x-scheme-handler/http;x-scheme-handler/https;" # bug #360797
 	mime_types+="x-scheme-handler/ftp;" # bug #412185
