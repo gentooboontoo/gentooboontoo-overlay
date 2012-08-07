@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-20.0.1132.57.ebuild,v 1.4 2012/07/22 16:52:26 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-21.0.1180.64.ebuild,v 1.1 2012/08/06 22:24:41 floppym Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -18,7 +18,7 @@ SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux"
 
 RDEPEND="app-arch/bzip2
@@ -26,9 +26,10 @@ RDEPEND="app-arch/bzip2
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.10.2.1
+	>=dev-lang/v8-3.11.10.6
 	dev-libs/dbus-glib
 	dev-libs/elfutils
+	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1
 	>=dev-libs/libevent-1.4.13
 	dev-libs/libxml2[icu]
@@ -40,11 +41,11 @@ RDEPEND="app-arch/bzip2
 	media-libs/flac
 	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
-	>=media-libs/libwebp-0.1.3
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
 	sys-fs/udev
 	sys-libs/zlib
+	virtual/libusb:1
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
 	x11-libs/libXScrnSaver
@@ -59,7 +60,6 @@ DEPEND="${RDEPEND}
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
 	>=sys-devel/bison-2.4.3
-	<sys-devel/bison-2.6
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
 	virtual/pkgconfig
@@ -90,7 +90,9 @@ pkg_setup() {
 	python_set_active_version 2
 	python_pkg_setup
 
-	chromium_suid_sandbox_check_kernel_config
+	if ! use selinux; then
+		chromium_suid_sandbox_check_kernel_config
+	fi
 
 	if use bindist; then
 		elog "bindist enabled: H.264 video support will be disabled."
@@ -105,19 +107,13 @@ src_prepare() {
 
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
 	sed -i '1i#define OF(x) x' \
-		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.c \
-		chrome/common/zip*.cc || die
+		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.h || die
 
-	epatch "${FILESDIR}/${PN}-svnversion-r0.patch"
+	# Fix build without NaCl glibc toolchain.
+	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
 
-	# Backport upstream fix for Gentoo bug #415601.
-	epatch "${FILESDIR}/${PN}-unistd-r0.patch"
-
-	# Fix build without tcmalloc. To be upstreamed.
-	epatch "${FILESDIR}/${PN}-tcmalloc-r0.patch"
-
-	# Backport a crash fix, bug #420357.
-	epatch "${FILESDIR}/${PN}-alignment-r0.patch"
+	# Bug 427438.
+	epatch "${FILESDIR}/${PN}-bison-2.6-r0.patch"
 
 	epatch_user
 
@@ -127,7 +123,6 @@ src_prepare() {
 		\! -path 'third_party/angle/*' \
 		\! -path 'third_party/cacheinvalidation/*' \
 		\! -path 'third_party/cld/*' \
-		\! -path 'third_party/expat/*' \
 		\! -path 'third_party/ffmpeg/*' \
 		\! -path 'third_party/flac/flac.h' \
 		\! -path 'third_party/gpsd/*' \
@@ -141,8 +136,9 @@ src_prepare() {
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
 		\! -path 'third_party/libsrtp/*' \
-		\! -path 'third_party/libusb/*' \
+		\! -path 'third_party/libusb/libusb.h' \
 		\! -path 'third_party/libvpx/*' \
+		\! -path 'third_party/libwebp/*' \
 		\! -path 'third_party/libxml/chromium/*' \
 		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
@@ -160,6 +156,7 @@ src_prepare() {
 		\! -path 'third_party/speex/speex.h' \
 		\! -path 'third_party/sqlite/*' \
 		\! -path 'third_party/tlslite/*' \
+		\! -path 'third_party/trace-viewer/*' \
 		\! -path 'third_party/undoview/*' \
 		\! -path 'third_party/v8-i18n/*' \
 		\! -path 'third_party/webdriver/*' \
@@ -198,6 +195,9 @@ src_configure() {
 	# drivers, bug #413637.
 	myconf+=" -Dlinux_use_tcmalloc=0"
 
+	# Disable glibc Native Client toolchain, we don't need it (bug #417019).
+	myconf+=" -Ddisable_glibc=1"
+
 	# Make it possible to remove third_party/adobe.
 	echo > "${T}/flapper_version.h" || die
 	myconf+=" -Dflapper_version_h_file=${T}/flapper_version.h"
@@ -208,6 +208,8 @@ src_configure() {
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 	# TODO: use_system_vpx
+	# TODO: use_system_webp (https://chromiumcodereview.appspot.com/10496016
+	#	   needs to become part of webp release)
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
@@ -215,7 +217,7 @@ src_configure() {
 		-Duse_system_libevent=1
 		-Duse_system_libjpeg=1
 		-Duse_system_libpng=1
-		-Duse_system_libwebp=1
+		-Duse_system_libusb=1
 		-Duse_system_libxml=1
 		-Duse_system_speex=1
 		-Duse_system_v8=1
@@ -226,12 +228,12 @@ src_configure() {
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
 	myconf+="
-		$(gyp_use cups use_cups)
+		$(gyp_use cups)
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
-		$(gyp_use kerberos use_kerberos)
-		$(gyp_use pulseaudio use_pulseaudio)
+		$(gyp_use kerberos)
+		$(gyp_use pulseaudio)
 		$(gyp_use selinux selinux)"
 
 	if ! use selinux; then
@@ -277,7 +279,7 @@ src_configure() {
 src_compile() {
 	local test_targets
 	for x in base cacheinvalidation crypto \
-		googleurl gpu media net printing; do
+		googleurl gpu media net printing sql; do
 		test_targets+=" ${x}_unittests"
 	done
 
@@ -335,9 +337,10 @@ src_test() {
 	# DnsConfigServiceTest.GetSystemConfig: bug #394883.
 	# CertDatabaseNSSTest.ImportServerCert_SelfSigned: bug #399269.
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/net_unittests virtualmake \
-		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig:CertDatabaseNSSTest.ImportServerCert_SelfSigned'
+		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig:CertDatabaseNSSTest.ImportServerCert_SelfSigned:URLFetcher*'
 
 	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/printing_unittests virtualmake
+	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/sql_unittests virtualmake
 }
 
 src_install() {
@@ -393,11 +396,16 @@ src_install() {
 	doexe out/Release/libffmpegsumo.so || die
 
 	# Install icons and desktop entry.
-	for SIZE in 16 22 24 32 48 64 128 256 ; do
-		insinto /usr/share/icons/hicolor/${SIZE}x${SIZE}/apps
-		newins chrome/app/theme/chromium/product_logo_${SIZE}.png \
-			chromium-browser${CHROMIUM_SUFFIX}.png || die
+	local branding size
+	for size in 16 22 24 32 48 64 128 256 ; do
+		case ${size} in
+			16|32) branding="chrome/app/theme/default_100_percent/chromium" ;;
+				*) branding="chrome/app/theme/chromium" ;;
+		esac
+		newicon -s ${size} "${branding}/product_logo_${size}.png" \
+			chromium-browser${CHROMIUM_SUFFIX}.png
 	done
+
 	local mime_types="text/html;text/xml;application/xhtml+xml;"
 	mime_types+="x-scheme-handler/http;x-scheme-handler/https;" # bug #360797
 	mime_types+="x-scheme-handler/ftp;" # bug #412185
