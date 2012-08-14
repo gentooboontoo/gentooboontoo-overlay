@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-21.0.1180.57.ebuild,v 1.7 2012/08/13 10:22:21 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-21.0.1180.77.ebuild,v 1.1 2012/08/10 03:30:56 floppym Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -18,7 +18,7 @@ SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux"
 
 RDEPEND="app-arch/bzip2
@@ -28,7 +28,7 @@ RDEPEND="app-arch/bzip2
 	)
 	>=dev-lang/v8-3.11.10.6
 	dev-libs/dbus-glib
-	>=dev-libs/elfutils-0.149
+	dev-libs/elfutils
 	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1
 	>=dev-libs/libevent-1.4.13
