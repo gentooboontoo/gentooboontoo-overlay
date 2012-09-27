@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-21.0.1180.89.ebuild,v 1.3 2012/09/02 06:30:58 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-22.0.1229.91.ebuild,v 1.1 2012/09/27 02:31:37 floppym Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -18,7 +18,7 @@ SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux"
 
 RDEPEND="app-arch/bzip2
@@ -45,7 +45,6 @@ RDEPEND="app-arch/bzip2
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
 	sys-fs/udev
-	sys-libs/zlib
 	virtual/libusb:1
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
@@ -54,7 +53,7 @@ RDEPEND="app-arch/bzip2
 	kerberos? ( virtual/krb5 )
 	selinux? ( sys-libs/libselinux )"
 DEPEND="${RDEPEND}
-	>=dev-lang/nacl-toolchain-newlib-0_p7311
+	>=dev-lang/nacl-toolchain-newlib-0_p9093
 	dev-lang/perl
 	dev-lang/yasm
 	dev-python/ply
@@ -107,14 +106,11 @@ src_prepare() {
 		native_client/toolchain/linux_x86_newlib || die
 
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
-	sed -i '1i#define OF(x) x' \
-		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.h || die
+	#sed -i '1i#define OF(x) x' \
+	#	third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.h || die
 
 	# Fix build without NaCl glibc toolchain.
 	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
-
-	# Bug 427438.
-	epatch "${FILESDIR}/${PN}-bison-2.6-r0.patch"
 
 	epatch_user
 
@@ -129,6 +125,7 @@ src_prepare() {
 		\! -path 'third_party/gpsd/*' \
 		\! -path 'third_party/harfbuzz/*' \
 		\! -path 'third_party/hunspell/*' \
+		\! -path 'third_party/hyphen/*' \
 		\! -path 'third_party/iccjpeg/*' \
 		\! -path 'third_party/jsoncpp/*' \
 		\! -path 'third_party/khronos/*' \
@@ -138,8 +135,10 @@ src_prepare() {
 		\! -path 'third_party/libphonenumber/*' \
 		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libusb/libusb.h' \
+		\! -path 'third_party/libva/*' \
 		\! -path 'third_party/libvpx/*' \
 		\! -path 'third_party/libxml/chromium/*' \
+		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
 		\! -path 'third_party/mesa/*' \
@@ -149,6 +148,8 @@ src_prepare() {
 		\! -path 'third_party/openmax/*' \
 		\! -path 'third_party/ots/*' \
 		\! -path 'third_party/protobuf/*' \
+		\! -path 'third_party/qcms/*' \
+		\! -path 'third_party/re2/*' \
 		\! -path 'third_party/scons-2.0.1/*' \
 		\! -path 'third_party/sfntly/*' \
 		\! -path 'third_party/skia/*' \
@@ -162,7 +163,7 @@ src_prepare() {
 		\! -path 'third_party/webdriver/*' \
 		\! -path 'third_party/webgl_conformance/*' \
 		\! -path 'third_party/webrtc/*' \
-		\! -path 'third_party/zlib/contrib/minizip/*' \
+		\! -path 'third_party/zlib/*' \
 		-delete || die
 
 	local v8_bundled="$(chromium_bundled_v8_version)"
@@ -222,7 +223,7 @@ src_configure() {
 		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
 		-Duse_system_yasm=1
-		-Duse_system_zlib=1"
+		-Duse_system_zlib=0"
 
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
@@ -326,25 +327,41 @@ src_test() {
 		die "Tests must be run as non-root. Please use FEATURES=userpriv."
 	fi
 
-	# ICUStringConversionsTest: bug #350347.
-	# MessagePumpLibeventTest: bug #398501.
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/base_unittests virtualmake \
-		'--gtest_filter=-ICUStringConversionsTest.*:MessagePumpLibeventTest.*'
+	runtest() {
+		local cmd=$1
+		shift
+		local filter="--gtest_filter=$(IFS=:; echo "-${*}")"
+		einfo "${cmd}" "${filter}"
+		LC_ALL="${mylocale}" VIRTUALX_COMMAND="${cmd}" virtualmake "${filter}"
+	}
 
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/cacheinvalidation_unittests virtualmake
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/crypto_unittests virtualmake
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/googleurl_unittests virtualmake
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/gpu_unittests virtualmake
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/media_unittests virtualmake
+	local excluded_base_unittests=(
+		"ICUStringConversionsTest.*" # bug #350347
+		"MessagePumpLibeventTest.*" # bug #398591
+	)
+	runtest out/Release/base_unittests "${excluded_base_unittests[@]}"
 
-	# NetUtilTest: bug #361885.
-	# DnsConfigServiceTest.GetSystemConfig: bug #394883.
-	# CertDatabaseNSSTest.ImportServerCert_SelfSigned: bug #399269.
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/net_unittests virtualmake \
-		'--gtest_filter=-NetUtilTest.IDNToUnicode*:NetUtilTest.FormatUrl*:DnsConfigServiceTest.GetSystemConfig:CertDatabaseNSSTest.ImportServerCert_SelfSigned:URLFetcher*'
+	runtest out/Release/cacheinvalidation_unittests
+	runtest out/Release/crypto_unittests
+	runtest out/Release/googleurl_unittests
+	runtest out/Release/gpu_unittests
 
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/printing_unittests virtualmake
-	LC_ALL="${mylocale}" VIRTUALX_COMMAND=out/Release/sql_unittests virtualmake
+	local excluded_media_unittests=(
+		"ChunkDemuxerTest.TestDurationChangeTimestampOffset" # bug #431042
+	)
+	runtest out/Release/media_unittests "${excluded_media_unittests[@]}"
+
+	local excluded_net_unittests=(
+		"NetUtilTest.IDNToUnicode*" # bug 361885
+		"NetUtilTest.FormatUrl*" # see above
+		"DnsConfigServiceTest.GetSystemConfig" # bug #394883
+		"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
+		"URLFetcher*" # bug #425764
+	)
+	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
+
+	runtest out/Release/printing_unittests
+	runtest out/Release/sql_unittests
 }
 
 src_install() {
