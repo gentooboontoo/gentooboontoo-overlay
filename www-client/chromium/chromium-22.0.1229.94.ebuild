@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-23.0.1271.17.ebuild,v 1.1 2012/10/04 19:08:36 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-22.0.1229.94.ebuild,v 1.3 2012/10/11 21:10:34 ago Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -18,8 +18,8 @@ SRC_URI="http://commondatastorage.googleapis.com/chromium-browser-official/${P}.
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
-IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux tcmalloc"
+KEYWORDS="amd64 x86"
+IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux"
 
 RDEPEND="app-arch/bzip2
 	cups? (
@@ -27,6 +27,7 @@ RDEPEND="app-arch/bzip2
 		>=net-print/cups-1.3.11
 	)
 	>=dev-lang/v8-3.11.10.6
+	dev-libs/dbus-glib
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1
@@ -51,7 +52,10 @@ RDEPEND="app-arch/bzip2
 	x11-libs/libXScrnSaver
 	x11-libs/libXtst
 	kerberos? ( virtual/krb5 )
-	selinux? ( sys-libs/libselinux )"
+	selinux? (
+		sec-policy/selinux-chromium
+		sys-libs/libselinux
+	)"
 DEPEND="${RDEPEND}
 	>=dev-lang/nacl-toolchain-newlib-0_p9093
 	dev-lang/perl
@@ -63,7 +67,9 @@ DEPEND="${RDEPEND}
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
 	virtual/pkgconfig
-	test? ( dev-python/pyftpdlib )"
+	test? (
+		dev-python/pyftpdlib
+	)"
 RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
@@ -100,50 +106,15 @@ pkg_setup() {
 }
 
 src_prepare() {
-	if ! use arm; then
-		ebegin "Preparing NaCl newlib toolchain"
-		pushd "${T}" >/dev/null || die
-		mkdir sdk || die
-		cp -a /usr/$(get_libdir)/nacl-toolchain-newlib sdk/nacl-sdk || die
-		mkdir -p "${S}"/native_client/toolchain/.tars || die
-		tar czf "${S}"/native_client/toolchain/.tars/naclsdk_linux_x86.tgz sdk || die
-		popd >/dev/null || die
-		eend $?
-	fi
+	ln -s /usr/$(get_libdir)/nacl-toolchain-newlib \
+		native_client/toolchain/linux_x86_newlib || die
 
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
-	# sed -i '1i#define OF(x) x' \
+	#sed -i '1i#define OF(x) x' \
 	#	third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.h || die
 
 	# Fix build without NaCl glibc toolchain.
 	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
-
-	# Fix unnecessary dependency on dbus-glib, bug #434346.
-	epatch "${FILESDIR}/${PN}-dbus-glib-r0.patch"
-
-	# Fix build with system ICU.
-	epatch "${FILESDIR}/${PN}-system-icu-r0.patch"
-
-	# Fix build with system speex, bug #432748.
-	epatch "${FILESDIR}/${PN}-system-speex-r0.patch"
-
-	# Missing gyp files in tarball.
-	# https://code.google.com/p/chromium/issues/detail?id=144823
-	if [[ -e chrome/test/data/nacl/nacl_test_data.gyp ]]; then
-		die "tarball fixed, please remove workaround"
-	fi
-
-	mkdir -p chrome/test/data/nacl
-	cat > chrome/test/data/nacl/nacl_test_data.gyp <<-EOF
-	{
-	  'targets': [
-	    {
-	      'target_name': 'nacl_tests',
-	      'type': 'none',
-	    },
-	  ],
-	}
-	EOF
 
 	epatch_user
 
@@ -155,7 +126,6 @@ src_prepare() {
 		\! -path 'third_party/cld/*' \
 		\! -path 'third_party/ffmpeg/*' \
 		\! -path 'third_party/flac/flac.h' \
-		\! -path 'third_party/flot/*' \
 		\! -path 'third_party/gpsd/*' \
 		\! -path 'third_party/harfbuzz/*' \
 		\! -path 'third_party/hunspell/*' \
@@ -178,7 +148,6 @@ src_prepare() {
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
 		\! -path 'third_party/mongoose/*' \
-		\! -path 'third_party/mt19937ar/*' \
 		\! -path 'third_party/npapi/*' \
 		\! -path 'third_party/openmax/*' \
 		\! -path 'third_party/ots/*' \
@@ -191,7 +160,6 @@ src_prepare() {
 		\! -path 'third_party/smhasher/*' \
 		\! -path 'third_party/speex/speex.h' \
 		\! -path 'third_party/sqlite/*' \
-		\! -path 'third_party/tcmalloc/*' \
 		\! -path 'third_party/tlslite/*' \
 		\! -path 'third_party/trace-viewer/*' \
 		\! -path 'third_party/undoview/*' \
@@ -228,15 +196,12 @@ src_configure() {
 	# additions, bug #336871.
 	myconf+=" -Ddisable_sse2=1"
 
-	# Optional tcmalloc. Note it causes problems with e.g. NVIDIA
+	# Disable tcmalloc, it causes problems with e.g. NVIDIA
 	# drivers, bug #413637.
-	myconf+=" $(gyp_use tcmalloc linux_use_tcmalloc)"
+	myconf+=" -Dlinux_use_tcmalloc=0"
 
 	# Disable glibc Native Client toolchain, we don't need it (bug #417019).
 	myconf+=" -Ddisable_glibc=1"
-
-	# TODO: also build with pnacl
-	myconf+=" -Ddisable_pnacl=1"
 
 	# Make it possible to remove third_party/adobe.
 	echo > "${T}/flapper_version.h" || die
@@ -245,11 +210,9 @@ src_configure() {
 	# Use system-provided libraries.
 	# TODO: use_system_ffmpeg
 	# TODO: use_system_hunspell (upstream changes needed).
-	# TODO: use_system_speex (needs additional shims, bug #432748).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 	# TODO: use_system_vpx
-	# TODO: use_system_zlib (forked, bug #432746).
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
@@ -304,11 +267,6 @@ src_configure() {
 		myconf+=" -Dtarget_arch=x64"
 	elif [[ $myarch = x86 ]] ; then
 		myconf+=" -Dtarget_arch=ia32"
-	elif [[ $myarch = arm ]] ; then
-		# TODO: re-enable NaCl (NativeClient).
-		myconf+=" -Dtarget_arch=arm
-			-Darm_neon=0
-			-Ddisable_nacl=1"
 	else
 		die "Failed to determine target arch, got '$myarch'."
 	fi
@@ -391,7 +349,11 @@ src_test() {
 	runtest out/Release/crypto_unittests
 	runtest out/Release/googleurl_unittests
 	runtest out/Release/gpu_unittests
-	runtest out/Release/media_unittests
+
+	local excluded_media_unittests=(
+		"ChunkDemuxerTest.TestDurationChangeTimestampOffset" # bug #431042
+	)
+	runtest out/Release/media_unittests "${excluded_media_unittests[@]}"
 
 	local excluded_net_unittests=(
 		"NetUtilTest.IDNToUnicode*" # bug 361885
@@ -399,9 +361,7 @@ src_test() {
 		"DnsConfigServiceTest.GetSystemConfig" # bug #394883
 		"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
 		"URLFetcher*" # bug #425764
-		"HTTPSOCSPTest.*" # bug #426630
-		"HTTPSEVCRLSetTest.*" # see above
-		"HTTPSCRLSetTest.*" # see above
+		"SpdyFramer*" # bug #436370
 	)
 	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
 
@@ -420,12 +380,10 @@ src_install() {
 
 	doexe out/Release/chromedriver || die
 
-	if ! use arm; then
-		doexe out/Release/nacl_helper{,_bootstrap} || die
-		insinto "${CHROMIUM_HOME}"
-		doins out/Release/nacl_irt_*.nexe || die
-		doins out/Release/libppGoogleNaClPluginChrome.so || die
-	fi
+	doexe out/Release/nacl_helper{,_bootstrap} || die
+	insinto "${CHROMIUM_HOME}"
+	doins out/Release/nacl_irt_*.nexe || die
+	doins out/Release/libppGoogleNaClPluginChrome.so || die
 
 	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
 	if [[ "${CHROMIUM_SUFFIX}" != "" ]]; then
