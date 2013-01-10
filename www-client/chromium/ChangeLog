@@ -1,6 +1,19 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2013 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.784 2013/01/08 04:22:16 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.786 2013/01/09 05:20:15 floppym Exp $
+
+*chromium-24.0.1312.52 (09 Jan 2013)
+
+  09 Jan 2013; Mike Gilbert <floppym@gentoo.org> +chromium-24.0.1312.52.ebuild:
+  Beta channel bump.
+
+*chromium-25.0.1364.26 (09 Jan 2013)
+
+  09 Jan 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-system-opus-r0.patch, -chromium-25.0.1364.2.ebuild,
+  +chromium-25.0.1364.26.ebuild, chromium-9999-r1.ebuild:
+  Dev channel bump. Fix build with system opus (bug #439884 by Magnus
+  Helmersson; patch by Elan Ruusamae). Remove old.
 
   08 Jan 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org> chromium-9999-r1.ebuild:
   Drop patch applied upstream, bug #450276 by Octavio Ruiz.
