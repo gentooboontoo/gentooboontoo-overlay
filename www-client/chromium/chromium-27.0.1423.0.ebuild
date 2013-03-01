@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-27.0.1423.0.ebuild,v 1.2 2013/02/27 22:52:17 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-27.0.1423.0.ebuild,v 1.4 2013/03/01 02:15:33 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -34,7 +34,7 @@ RDEPEND="app-accessibility/speech-dispatcher
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1:=
-	dev-libs/jsoncpp
+	=dev-libs/jsoncpp-0.5.0
 	>=dev-libs/libevent-1.4.13
 	dev-libs/libxml2[icu]
 	dev-libs/libxslt
@@ -442,7 +442,7 @@ src_install() {
 		doins out/Release/libppGoogleNaClPluginChrome.so || die
 	fi
 
-	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
+	newexe "${FILESDIR}"/chromium-launcher-r3.sh chromium-launcher.sh || die
 	if [[ "${CHROMIUM_SUFFIX}" != "" ]]; then
 		sed "s:chromium-browser:chromium-browser${CHROMIUM_SUFFIX}:g" \
 			-i "${ED}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
