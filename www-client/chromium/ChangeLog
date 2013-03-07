@@ -1,6 +1,23 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2013 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.829 2013/03/05 13:17:45 ago Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.833 2013/03/07 00:39:57 floppym Exp $
+
+  07 Mar 2013; Mike Gilbert <floppym@gentoo.org> chromium-27.0.1430.0.ebuild,
+  chromium-9999-r1.ebuild:
+  Add slot operators to live ebuild.
+
+  07 Mar 2013; Mike Gilbert <floppym@gentoo.org> chromium-27.0.1430.0.ebuild:
+  Add slot-operators for most library dependencies.
+
+*chromium-27.0.1430.0 (06 Mar 2013)
+
+  06 Mar 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-27.0.1423.0.ebuild, +chromium-27.0.1430.0.ebuild:
+  Dev channel bump. Remove old.
+
+  06 Mar 2013; Mike Gilbert <floppym@gentoo.org> chromium-25.0.1364.152.ebuild,
+  chromium-26.0.1410.19.ebuild, chromium-27.0.1425.0.ebuild:
+  Add slot operator dep for protobuf.
 
   05 Mar 2013; Agostino Sarubbo <ago@gentoo.org> chromium-25.0.1364.152.ebuild:
   Stable for x86, wrt bug #460318
