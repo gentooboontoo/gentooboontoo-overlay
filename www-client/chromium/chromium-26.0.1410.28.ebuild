@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-26.0.1410.28.ebuild,v 1.1 2013/03/11 22:03:28 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-26.0.1410.28.ebuild,v 1.3 2013/03/14 00:59:34 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -122,7 +122,8 @@ pkg_setup() {
 src_prepare() {
 	if ! use arm; then
 		mkdir -p out/Release/obj/gen/sdk/toolchain || die
-		cp -a /usr/$(get_libdir)/nacl-toolchain-newlib \
+		# Do not preserve SELinux context, bug #460892 .
+		cp -a --no-preserve=context /usr/$(get_libdir)/nacl-toolchain-newlib \
 			out/Release/obj/gen/sdk/toolchain/linux_x86_newlib || die
 		touch out/Release/obj/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	fi
@@ -136,6 +137,9 @@ src_prepare() {
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r2a.patch"
 
 	epatch "${FILESDIR}/${PN}-jsoncpp-path-r0.patch"
+
+	# Fix build issue with smhasher, bug #459126 .
+	epatch "${FILESDIR}/${PN}-smhasher-r0.patch"
 
 	epatch_user
 

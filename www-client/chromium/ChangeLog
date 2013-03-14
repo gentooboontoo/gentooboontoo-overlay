@@ -1,6 +1,29 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2013 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.842 2013/03/13 00:24:02 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.846 2013/03/14 02:53:10 floppym Exp $
+
+*chromium-26.0.1410.33 (14 Mar 2013)
+
+  14 Mar 2013; Mike Gilbert <floppym@gentoo.org> +chromium-26.0.1410.33.ebuild,
+  -chromium-26.0.1410.19.ebuild:
+  Beta channel bump.
+
+  14 Mar 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-smhasher-r0.patch, chromium-25.0.1364.172.ebuild,
+  chromium-26.0.1410.28.ebuild, chromium-27.0.1438.7.ebuild:
+  Fix build issues with _mm_crc32_u64, bug #459126 by Nuno.
+
+  13 Mar 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-26.0.1410.28.ebuild, chromium-27.0.1438.7.ebuild,
+  chromium-9999-r1.ebuild:
+  Fix build with SELinux, bug #460892 by swift.
+
+*chromium-27.0.1438.7 (13 Mar 2013)
+
+  13 Mar 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-27.0.1425.0.ebuild, +chromium-27.0.1438.7.ebuild,
+  chromium-9999-r1.ebuild:
+  Dev channel bump. Remove old.
 
 *chromium-25.0.1364.172 (13 Mar 2013)
 
