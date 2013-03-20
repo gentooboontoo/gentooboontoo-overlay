@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.183 2013/03/19 22:49:07 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-27.0.1444.3.ebuild,v 1.1 2013/03/19 22:49:07 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -10,15 +10,15 @@ CHROMIUM_LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he
 	sv sw ta te th tr uk vi zh_CN zh_TW"
 
 inherit chromium eutils flag-o-matic multilib \
-	pax-utils portability python-any-r1 subversion toolchain-funcs versionator virtualx
+	pax-utils portability python-any-r1 toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-ESVN_REPO_URI="http://src.chromium.org/svn/trunk/src"
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz"
 
 LICENSE="BSD"
-SLOT="live"
-KEYWORDS=""
+SLOT="0"
+KEYWORDS="~amd64 ~x86"
 IUSE="cups gnome gnome-keyring gps kerberos selinux system-sqlite tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
@@ -46,7 +46,7 @@ RDEPEND="app-accessibility/speech-dispatcher:=
 	gnome? ( >=gnome-base/gconf-2.24.0:= )
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
 	gps? ( >=sci-geosciences/gpsd-3.7:=[shm] )
-	>=media-libs/alsa-lib-1.0.19
+	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/flac:=
 	media-libs/harfbuzz:=
 	>=media-libs/libjpeg-turbo-1.2.0-r1:=
@@ -93,64 +93,6 @@ RDEPEND+="
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
 
-gclient_config() {
-	einfo "gclient config -->"
-	# Allow the user to keep their config if they know what they are doing.
-	if ! grep -q KEEP .gclient; then
-		cp -f "${FILESDIR}/dot-gclient" .gclient || die
-	fi
-	cat .gclient || die
-}
-
-gclient_sync() {
-	einfo "gclient sync -->"
-	[[ -n "${ESVN_UMASK}" ]] && eumask_push "${ESVN_UMASK}"
-	# Only use a single job to prevent hangs.
-	"${WORKDIR}/depot_tools/gclient" sync --nohooks --jobs=1 \
-		--delete_unversioned_trees || die
-	[[ -n "${ESVN_UMASK}" ]] && eumask_pop
-}
-
-gclient_runhooks() {
-	# Run all hooks except gyp_chromium.
-	einfo "gclient runhooks -->"
-	cp src/DEPS src/DEPS.orig || die
-	sed -e 's:"python", "src/build/gyp_chromium":"true":' -i src/DEPS || die
-	"${WORKDIR}/depot_tools/gclient" runhooks
-	local ret=$?
-	mv src/DEPS.orig src/DEPS || die
-	[[ ${ret} -eq 0 ]] || die "gclient runhooks failed"
-}
-
-src_unpack() {
-	# First grab depot_tools.
-	ESVN_REVISION= subversion_fetch "http://src.chromium.org/svn/trunk/tools/depot_tools"
-	mv "${S}" "${WORKDIR}"/depot_tools || die
-
-	cd "${ESVN_STORE_DIR}/${PN}" || die
-
-	gclient_config
-	gclient_sync
-
-	# Disabled so that we do not download nacl toolchain.
-	#gclient_runhooks
-
-	# Remove any lingering nacl toolchain files.
-	rm -rf src/native_client/toolchain/linux_x86_newlib
-
-	subversion_wc_info
-
-	mkdir -p "${S}" || die
-	einfo "Copying source to ${S}"
-	rsync -rlpgo --exclude=".svn/" src/ "${S}" || die
-
-	# Display correct svn revision in about box, and log new version.
-	echo "LASTCHANGE=${ESVN_WC_REVISION}" > "${S}"/build/util/LASTCHANGE || die
-
-	. src/chrome/VERSION
-	elog "Installing/updating to version ${MAJOR}.${MINOR}.${BUILD}.${PATCH} (Developer Build ${ESVN_WC_REVISION})"
-}
-
 if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
 	EBUILD_DEATH_HOOKS+=" chromium_pkg_die";
 fi
@@ -187,7 +129,11 @@ src_prepare() {
 		touch out/Release/obj/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	fi
 
+	epatch "${FILESDIR}/${PN}-gpsd-r0.patch"
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
+
+	# Fix build issue with smhasher, bug #459126 .
+	epatch "${FILESDIR}/${PN}-smhasher-r0.patch"
 
 	epatch_user
 
@@ -236,10 +182,6 @@ src_prepare() {
 		\! -path 'third_party/widevine/*' \
 		\! -path 'third_party/x86inc/*' \
 		-delete || die
-
-	local v8_bundled="$(chromium_bundled_v8_version)"
-	local v8_installed="$(chromium_installed_v8_version)"
-	einfo "V8 version: bundled - ${v8_bundled}; installed - ${v8_installed}"
 
 	# Remove bundled v8.
 	find v8 -type f \! -iname '*.gyp*' -delete || die
