@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-26.0.1410.33.ebuild,v 1.1 2013/03/14 02:53:10 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-27.0.1453.12.ebuild,v 1.1 2013/04/03 15:57:15 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -14,62 +14,64 @@ inherit chromium eutils flag-o-matic multilib \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz"
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz
+	test? ( https://commondatastorage.googleapis.com/chromium-browser-official/${P}-testdata.tar.xz )"
 
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="bindist cups gnome gnome-keyring gps kerberos pulseaudio selinux system-ffmpeg tcmalloc"
+IUSE="cups gnome gnome-keyring gps kerberos pulseaudio selinux system-sqlite tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
 
-RDEPEND="app-accessibility/speech-dispatcher
-	app-arch/bzip2
+RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
+	app-arch/bzip2:=
+	system-sqlite? ( dev-db/sqlite:3 )
 	cups? (
-		dev-libs/libgcrypt
-		>=net-print/cups-1.3.11
+		dev-libs/libgcrypt:=
+		>=net-print/cups-1.3.11:=
 	)
-	>=dev-lang/v8-3.16.11.1:=
+	>=dev-lang/v8-3.17.6:=
 	>=dev-libs/elfutils-0.149
-	dev-libs/expat
+	dev-libs/expat:=
 	>=dev-libs/icu-49.1.1-r1:=
-	dev-libs/jsoncpp
-	>=dev-libs/libevent-1.4.13
-	dev-libs/libxml2[icu]
-	dev-libs/libxslt
-	dev-libs/nspr
-	>=dev-libs/nss-3.12.3
+	>=dev-libs/jsoncpp-0.5.0-r1:=
+	>=dev-libs/libevent-1.4.13:=
+	dev-libs/libxml2:=[icu]
+	dev-libs/libxslt:=
+	dev-libs/nspr:=
+	>=dev-libs/nss-3.12.3:=
 	dev-libs/protobuf:=
-	dev-libs/re2
-	gnome? ( >=gnome-base/gconf-2.24.0 )
-	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
-	gps? ( >=sci-geosciences/gpsd-3.7[shm] )
-	>=media-libs/alsa-lib-1.0.19
-	media-libs/flac
-	media-libs/harfbuzz
-	>=media-libs/libjpeg-turbo-1.2.0-r1
-	media-libs/libpng
-	>=media-libs/libwebp-0.2.0_rc1
-	!arm? ( !x86? ( >=media-libs/mesa-9.1[gles2] ) )
-	media-libs/opus
-	media-libs/speex
-	pulseaudio? ( media-sound/pulseaudio )
-	system-ffmpeg? ( >=media-video/ffmpeg-1.0[opus] )
-	>=net-libs/libsrtp-1.4.4_p20121108
-	sys-apps/dbus
-	sys-apps/pciutils
-	sys-libs/zlib[minizip]
+	dev-libs/re2:=
+	gnome? ( >=gnome-base/gconf-2.24.0:= )
+	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
+	gps? ( >=sci-geosciences/gpsd-3.7:=[shm] )
+	>=media-libs/alsa-lib-1.0.19:=
+	media-libs/flac:=
+	media-libs/harfbuzz:=
+	>=media-libs/libjpeg-turbo-1.2.0-r1:=
+	media-libs/libpng:=
+	media-libs/libvpx:=
+	>=media-libs/libwebp-0.2.0_rc1:=
+	!arm? ( !x86? ( >=media-libs/mesa-9.1:=[gles2] ) )
+	media-libs/opus:=
+	media-libs/speex:=
+	pulseaudio? ( media-sound/pulseaudio:= )
+	>=media-video/ffmpeg-1.0:=[opus]
+	sys-apps/dbus:=
+	sys-apps/pciutils:=
+	sys-libs/zlib:=[minizip]
 	virtual/udev
-	virtual/libusb:1
-	x11-libs/gtk+:2
-	x11-libs/libXinerama
-	x11-libs/libXScrnSaver
-	x11-libs/libXtst
+	virtual/libusb:1=
+	x11-libs/gtk+:2=
+	x11-libs/libXinerama:=
+	x11-libs/libXScrnSaver:=
+	x11-libs/libXtst:=
 	kerberos? ( virtual/krb5 )
 	selinux? (
 		sec-policy/selinux-chromium
-		sys-libs/libselinux
+		sys-libs/libselinux:=
 	)"
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
@@ -111,12 +113,12 @@ pkg_setup() {
 		chromium_suid_sandbox_check_kernel_config
 	fi
 
-	if use bindist && ! use system-ffmpeg; then
-		elog "bindist enabled: H.264 video support will be disabled."
-	fi
-	if ! use bindist; then
-		elog "bindist disabled: Resulting binaries may not be legal to re-distribute."
-	fi
+	# if use bindist && ! use system-ffmpeg; then
+	#	elog "bindist enabled: H.264 video support will be disabled."
+	# fi
+	# if ! use bindist; then
+	#	elog "bindist disabled: Resulting binaries may not be legal to re-distribute."
+	# fi
 }
 
 src_prepare() {
@@ -128,18 +130,20 @@ src_prepare() {
 		touch out/Release/obj/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	fi
 
-	# Fix build without NaCl glibc toolchain.
-	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
-
 	epatch "${FILESDIR}/${PN}-gpsd-r0.patch"
-	epatch "${FILESDIR}/${PN}-mesa-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-v8-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-ffmpeg-r2a.patch"
-
-	epatch "${FILESDIR}/${PN}-jsoncpp-path-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
 
 	# Fix build issue with smhasher, bug #459126 .
 	epatch "${FILESDIR}/${PN}-smhasher-r0.patch"
+
+	# Fix build without pnacl, to be upstreamed.
+	epatch "${FILESDIR}/${PN}-pnacl-r0.patch"
+
+	# Fix build with speech-dispatcher-0.8, bug #463550 .
+	epatch "${FILESDIR}/${PN}-speech-dispatcher-0.8-r0.patch"
+
+	# Fix build with system v8.
+	epatch "${FILESDIR}/${PN}-system-v8-r0.patch"
 
 	epatch_user
 
@@ -160,7 +164,7 @@ src_prepare() {
 		\! -path 'third_party/leveldatabase/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
-		\! -path 'third_party/libvpx/*' \
+		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libxml/chromium/*' \
 		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
@@ -220,20 +224,21 @@ src_configure() {
 
 	# Use system-provided libraries.
 	# TODO: use_system_hunspell (upstream changes needed).
+	# TODO: use_system_libsrtp (bug #459932).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
-	# TODO: use_system_libvpx (http://crbug.com/174287).
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
+		-Duse_system_ffmpeg=1
 		-Duse_system_harfbuzz=1
 		-Duse_system_icu=1
 		-Duse_system_jsoncpp=1
 		-Duse_system_libevent=1
 		-Duse_system_libjpeg=1
 		-Duse_system_libpng=1
-		-Duse_system_libsrtp=1
 		-Duse_system_libusb=1
+		-Duse_system_libvpx=1
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
 		-Duse_system_minizip=1
@@ -244,8 +249,7 @@ src_configure() {
 		-Duse_system_speex=1
 		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
-		-Duse_system_zlib=1
-		$(gyp_use system-ffmpeg use_system_ffmpeg)"
+		-Duse_system_zlib=1"
 
 	# TODO: Use system mesa on x86, bug #457130 .
 	if ! use x86 && ! use arm; then
@@ -259,6 +263,10 @@ src_configure() {
 			-Duse_system_yasm=1"
 	fi
 
+	# TODO: re-enable on vp9 libvpx release (http://crbug.com/174287).
+	myconf+="
+		-Dmedia_use_libvpx=0"
+
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
 	myconf+="
@@ -271,6 +279,15 @@ src_configure() {
 		$(gyp_use kerberos)
 		$(gyp_use pulseaudio)
 		$(gyp_use selinux selinux)"
+
+	if use system-sqlite; then
+		elog "Enabling system sqlite. WebSQL - http://www.w3.org/TR/webdatabase/"
+		elog "will not work. Please report sites broken by this"
+		elog "to https://bugs.gentoo.org"
+		myconf+="
+			-Duse_system_sqlite=1
+			-Denable_sql_database=0"
+	fi
 
 	# Use explicit library dependencies instead of dlopen.
 	# This makes breakages easier to detect by revdep-rebuild.
@@ -298,10 +315,10 @@ src_configure() {
 	# Always support proprietary codecs.
 	myconf+=" -Dproprietary_codecs=1"
 
-	if ! use bindist && ! use system-ffmpeg; then
-		# Enable H.624 support in bundled ffmpeg.
-		myconf+=" -Dffmpeg_branding=Chrome"
-	fi
+	# if ! use bindist && ! use system-ffmpeg; then
+	#	# Enable H.624 support in bundled ffmpeg.
+	#	myconf+=" -Dffmpeg_branding=Chrome"
+	# fi
 
 	# Set up Google API keys, see http://www.chromium.org/developers/how-tos/api-keys .
 	# Note: these are for Gentoo use ONLY. For your own distribution,
@@ -348,9 +365,10 @@ src_configure() {
 }
 
 src_compile() {
+	# TODO: add media_unittests after fixing compile (bug #462546).
 	local test_targets
 	for x in base cacheinvalidation crypto \
-		googleurl gpu media net printing sql; do
+		googleurl gpu net printing sql; do
 		test_targets+=" ${x}_unittests"
 	done
 
@@ -404,7 +422,7 @@ src_test() {
 	local excluded_base_unittests=(
 		"ICUStringConversionsTest.*" # bug #350347
 		"MessagePumpLibeventTest.*" # bug #398591
-		"SecurityTest.CallocOverflow" # bug #458396
+		"TimeTest.JsTime" # bug #459614
 	)
 	runtest out/Release/base_unittests "${excluded_base_unittests[@]}"
 
@@ -413,20 +431,20 @@ src_test() {
 	runtest out/Release/googleurl_unittests
 	runtest out/Release/gpu_unittests
 
-	# TODO: re-enable when we get the test data in a separate tarball.
+	# TODO: add media_unittests after fixing compile (bug #462546).
 	# runtest out/Release/media_unittests
 
-	# local excluded_net_unittests=(
-	#	"NetUtilTest.IDNToUnicode*" # bug 361885
-	#	"NetUtilTest.FormatUrl*" # see above
-	#	"DnsConfigServiceTest.GetSystemConfig" # bug #394883
-	#	"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
-	#	"URLFetcher*" # bug #425764
-	#	"HTTPSOCSPTest.*" # bug #426630
-	#	"HTTPSEVCRLSetTest.*" # see above
-	#	"HTTPSCRLSetTest.*" # see above
-	#)
-	# runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
+	local excluded_net_unittests=(
+		"NetUtilTest.IDNToUnicode*" # bug 361885
+		"NetUtilTest.FormatUrl*" # see above
+		"DnsConfigServiceTest.GetSystemConfig" # bug #394883
+		"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
+		"URLFetcher*" # bug #425764
+		"HTTPSOCSPTest.*" # bug #426630
+		"HTTPSEVCRLSetTest.*" # see above
+		"HTTPSCRLSetTest.*" # see above
+	)
+	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
 
 	runtest out/Release/printing_unittests
 	runtest out/Release/sql_unittests
@@ -484,9 +502,9 @@ src_install() {
 	newman out/Release/chrome.1 chromium${CHROMIUM_SUFFIX}.1 || die
 	newman out/Release/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
 
-	if ! use system-ffmpeg; then
-		doexe out/Release/libffmpegsumo.so || die
-	fi
+	# if ! use system-ffmpeg; then
+	#	doexe out/Release/libffmpegsumo.so || die
+	# fi
 
 	# Install icons and desktop entry.
 	local branding size
