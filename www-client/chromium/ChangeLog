@@ -1,6 +1,22 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2013 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.853 2013/03/27 22:41:11 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.856 2013/04/04 02:52:27 patrick Exp $
+
+  04 Apr 2013; Patrick Lauer <patrick@gentoo.org> chromium-26.0.1410.43.ebuild:
+  Apply fix for #463550 to all relevant versions
+
+  03 Apr 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-26.0.1410.33.ebuild, -chromium-26.0.1410.33-r1.ebuild,
+  chromium-26.0.1410.43.ebuild:
+  Remove dependency on mesa, bug #463430 . Remove old.
+
+*chromium-27.0.1453.12 (03 Apr 2013)
+
+  03 Apr 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-speech-dispatcher-0.8-r0.patch, -chromium-27.0.1448.0.ebuild,
+  +chromium-27.0.1453.12.ebuild, chromium-9999-r1.ebuild:
+  Dev channel bump. Fix build with speech-dispatcher-0.8 (bug #463550 by Denis
+  M. "Phr33d0m"). Remove old.
 
 *chromium-27.0.1453.3 (27 Mar 2013)
 
