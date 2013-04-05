@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-26.0.1410.43.ebuild,v 1.3 2013/04/04 02:52:27 patrick Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-26.0.1410.43.ebuild,v 1.6 2013/04/04 20:16:04 ago Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -18,7 +18,7 @@ SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="amd64 x86"
 IUSE="bindist cups gnome gnome-keyring gps kerberos pulseaudio selinux system-ffmpeg tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
@@ -138,11 +138,6 @@ src_prepare() {
 
 	# Fix build issue with smhasher, bug #459126 .
 	epatch "${FILESDIR}/${PN}-smhasher-r0.patch"
-
-	# Fix build with speech-dispatcher-0.8, bug #463550 .
-	if has_version ">=app-accessibility/speech-dispatcher-0.8"; then
-		epatch "${FILESDIR}/${PN}-speech-dispatcher-0.8-r0.patch"
-	fi
 
 	epatch_user
 
