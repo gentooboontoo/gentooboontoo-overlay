@@ -1,6 +1,24 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2013 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.861 2013/04/05 21:44:11 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.865 2013/04/11 02:01:23 floppym Exp $
+
+*chromium-26.0.1410.63 (11 Apr 2013)
+
+  11 Apr 2013; Mike Gilbert <floppym@gentoo.org> +chromium-26.0.1410.63.ebuild:
+  Stable channel bump.
+
+  10 Apr 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-27.0.1453.12.ebuild, chromium-9999-r1.ebuild:
+  Improve src_test: run content_unittests; exclude failing net_unittests
+  (http://crbug.com/224612 , bug #465444); exclude failing sql_unittests (bug
+  #461286 by Alphat-PC).
+
+  10 Apr 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  chromium-26.0.1410.43.ebuild, chromium-27.0.1453.12.ebuild:
+  Use stricter v8 dependencies, bug #465302 by mr_bones_ .
+
+  10 Apr 2013; Mike Gilbert <floppym@gentoo.org> chromium-26.0.1410.43.ebuild:
+  Put an upper bound on the speech-dispatcher dependency, bug 465358.
 
   05 Apr 2013; Mike Gilbert <floppym@gentoo.org> chromium-26.0.1410.43.ebuild,
   chromium-27.0.1453.12.ebuild, chromium-27.0.1453.3.ebuild,

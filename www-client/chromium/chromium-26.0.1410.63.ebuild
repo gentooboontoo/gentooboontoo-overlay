@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.187 2013/04/10 23:32:50 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-26.0.1410.63.ebuild,v 1.1 2013/04/11 02:01:23 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -10,67 +10,66 @@ CHROMIUM_LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he
 	sv sw ta te th tr uk vi zh_CN zh_TW"
 
 inherit chromium eutils flag-o-matic multilib \
-	pax-utils portability python-any-r1 subversion toolchain-funcs versionator virtualx
+	pax-utils portability python-any-r1 toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-ESVN_REPO_URI="http://src.chromium.org/svn/trunk/src"
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz"
 
 LICENSE="BSD"
-SLOT="live"
-KEYWORDS=""
-IUSE="cups gnome gnome-keyring gps kerberos pulseaudio selinux system-sqlite tcmalloc"
+SLOT="0"
+KEYWORDS="~amd64 ~x86"
+IUSE="bindist cups gnome gnome-keyring gps kerberos pulseaudio selinux system-ffmpeg tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
 
 RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
-	app-arch/bzip2:=
-	system-sqlite? ( dev-db/sqlite:3 )
+	app-arch/bzip2
 	cups? (
-		dev-libs/libgcrypt:=
-		>=net-print/cups-1.3.11:=
+		dev-libs/libgcrypt
+		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.17.6:=
+	>=dev-lang/v8-3.16.11.1:=
+	=dev-lang/v8-3.16*
 	>=dev-libs/elfutils-0.149
-	dev-libs/expat:=
+	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1:=
-	>=dev-libs/jsoncpp-0.5.0-r1:=
-	>=dev-libs/libevent-1.4.13:=
-	dev-libs/libxml2:=[icu]
-	dev-libs/libxslt:=
-	dev-libs/nspr:=
-	>=dev-libs/nss-3.12.3:=
+	dev-libs/jsoncpp
+	>=dev-libs/libevent-1.4.13
+	dev-libs/libxml2[icu]
+	dev-libs/libxslt
+	dev-libs/nspr
+	>=dev-libs/nss-3.12.3
 	dev-libs/protobuf:=
-	dev-libs/re2:=
-	gnome? ( >=gnome-base/gconf-2.24.0:= )
-	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
-	gps? ( >=sci-geosciences/gpsd-3.7:=[shm] )
+	dev-libs/re2
+	gnome? ( >=gnome-base/gconf-2.24.0 )
+	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
+	gps? ( >=sci-geosciences/gpsd-3.7[shm] )
 	>=media-libs/alsa-lib-1.0.19
-	media-libs/flac:=
-	media-libs/harfbuzz:=
-	>=media-libs/libjpeg-turbo-1.2.0-r1:=
+	media-libs/flac
+	media-libs/harfbuzz
+	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng:0=
-	media-libs/libvpx:=
-	>=media-libs/libwebp-0.2.0_rc1:=
-	!arm? ( !x86? ( >=media-libs/mesa-9.1:=[gles2] ) )
-	media-libs/opus:=
-	media-libs/speex:=
-	pulseaudio? ( media-sound/pulseaudio:= )
-	>=media-video/ffmpeg-1.0:=[opus]
-	sys-apps/dbus:=
-	sys-apps/pciutils:=
-	sys-libs/zlib:=[minizip]
+	media-libs/libvpx
+	>=media-libs/libwebp-0.2.0_rc1
+	media-libs/opus
+	media-libs/speex
+	pulseaudio? ( media-sound/pulseaudio )
+	system-ffmpeg? ( >=media-video/ffmpeg-1.0[opus] )
+	sys-apps/dbus
+	sys-apps/pciutils
+	sys-libs/zlib[minizip]
 	virtual/udev
-	virtual/libusb:1=
-	x11-libs/gtk+:2=
-	x11-libs/libXinerama:=
-	x11-libs/libXScrnSaver:=
-	x11-libs/libXtst:=
+	virtual/libusb:1
+	x11-libs/gtk+:2
+	x11-libs/libXinerama
+	x11-libs/libXScrnSaver
+	x11-libs/libXtst
 	kerberos? ( virtual/krb5 )
 	selinux? (
 		sec-policy/selinux-chromium
-		sys-libs/libselinux:=
+		sys-libs/libselinux
 	)"
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
@@ -93,64 +92,6 @@ RDEPEND+="
 	x11-misc/xdg-utils
 	virtual/ttf-fonts"
 
-gclient_config() {
-	einfo "gclient config -->"
-	# Allow the user to keep their config if they know what they are doing.
-	if ! grep -q KEEP .gclient; then
-		cp -f "${FILESDIR}/dot-gclient" .gclient || die
-	fi
-	cat .gclient || die
-}
-
-gclient_sync() {
-	einfo "gclient sync -->"
-	[[ -n "${ESVN_UMASK}" ]] && eumask_push "${ESVN_UMASK}"
-	# Only use a single job to prevent hangs.
-	"${WORKDIR}/depot_tools/gclient" sync --nohooks --jobs=1 \
-		--delete_unversioned_trees || die
-	[[ -n "${ESVN_UMASK}" ]] && eumask_pop
-}
-
-gclient_runhooks() {
-	# Run all hooks except gyp_chromium.
-	einfo "gclient runhooks -->"
-	cp src/DEPS src/DEPS.orig || die
-	sed -e 's:"python", "src/build/gyp_chromium":"true":' -i src/DEPS || die
-	"${WORKDIR}/depot_tools/gclient" runhooks
-	local ret=$?
-	mv src/DEPS.orig src/DEPS || die
-	[[ ${ret} -eq 0 ]] || die "gclient runhooks failed"
-}
-
-src_unpack() {
-	# First grab depot_tools.
-	ESVN_REVISION= subversion_fetch "http://src.chromium.org/svn/trunk/tools/depot_tools"
-	mv "${S}" "${WORKDIR}"/depot_tools || die
-
-	cd "${ESVN_STORE_DIR}/${PN}" || die
-
-	gclient_config
-	gclient_sync
-
-	# Disabled so that we do not download nacl toolchain.
-	#gclient_runhooks
-
-	# Remove any lingering nacl toolchain files.
-	rm -rf src/native_client/toolchain/linux_x86_newlib
-
-	subversion_wc_info
-
-	mkdir -p "${S}" || die
-	einfo "Copying source to ${S}"
-	rsync -rlpgo --exclude=".svn/" src/ "${S}" || die
-
-	# Display correct svn revision in about box, and log new version.
-	echo "LASTCHANGE=${ESVN_WC_REVISION}" > "${S}"/build/util/LASTCHANGE || die
-
-	. src/chrome/VERSION
-	elog "Installing/updating to version ${MAJOR}.${MINOR}.${BUILD}.${PATCH} (Developer Build ${ESVN_WC_REVISION})"
-}
-
 if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
 	EBUILD_DEATH_HOOKS+=" chromium_pkg_die";
 fi
@@ -170,12 +111,12 @@ pkg_setup() {
 		chromium_suid_sandbox_check_kernel_config
 	fi
 
-	# if use bindist && ! use system-ffmpeg; then
-	#	elog "bindist enabled: H.264 video support will be disabled."
-	# fi
-	# if ! use bindist; then
-	#	elog "bindist disabled: Resulting binaries may not be legal to re-distribute."
-	# fi
+	if use bindist && ! use system-ffmpeg; then
+		elog "bindist enabled: H.264 video support will be disabled."
+	fi
+	if ! use bindist; then
+		elog "bindist disabled: Resulting binaries may not be legal to re-distribute."
+	fi
 }
 
 src_prepare() {
@@ -187,7 +128,20 @@ src_prepare() {
 		touch out/Release/obj/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	fi
 
-	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
+	# Fix build without NaCl glibc toolchain.
+	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
+
+	epatch "${FILESDIR}/${PN}-gpsd-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-v8-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-ffmpeg-r2a.patch"
+
+	epatch "${FILESDIR}/${PN}-jsoncpp-path-r0.patch"
+
+	# Fix build issue with smhasher, bug #459126 .
+	epatch "${FILESDIR}/${PN}-smhasher-r0.patch"
+
+	# Fix build with speech-dispatcher-0.8, bug #463550 .
+	epatch "${FILESDIR}/${PN}-speech-dispatcher-0.8-r0.patch"
 
 	epatch_user
 
@@ -237,10 +191,6 @@ src_prepare() {
 		\! -path 'third_party/x86inc/*' \
 		-delete || die
 
-	local v8_bundled="$(chromium_bundled_v8_version)"
-	local v8_installed="$(chromium_installed_v8_version)"
-	einfo "V8 version: bundled - ${v8_bundled}; installed - ${v8_installed}"
-
 	# Remove bundled v8.
 	find v8 -type f \! -iname '*.gyp*' -delete || die
 }
@@ -278,7 +228,6 @@ src_configure() {
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
-		-Duse_system_ffmpeg=1
 		-Duse_system_harfbuzz=1
 		-Duse_system_icu=1
 		-Duse_system_jsoncpp=1
@@ -297,13 +246,8 @@ src_configure() {
 		-Duse_system_speex=1
 		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
-		-Duse_system_zlib=1"
-
-	# TODO: Use system mesa on x86, bug #457130 .
-	if ! use x86 && ! use arm; then
-		myconf+="
-			-Duse_system_mesa=1"
-	fi
+		-Duse_system_zlib=1
+		$(gyp_use system-ffmpeg use_system_ffmpeg)"
 
 	# TODO: patch gyp so that this arm conditional is not needed.
 	if ! use arm; then
@@ -327,15 +271,6 @@ src_configure() {
 		$(gyp_use kerberos)
 		$(gyp_use pulseaudio)
 		$(gyp_use selinux selinux)"
-
-	if use system-sqlite; then
-		elog "Enabling system sqlite. WebSQL - http://www.w3.org/TR/webdatabase/"
-		elog "will not work. Please report sites broken by this"
-		elog "to https://bugs.gentoo.org"
-		myconf+="
-			-Duse_system_sqlite=1
-			-Denable_sql_database=0"
-	fi
 
 	# Use explicit library dependencies instead of dlopen.
 	# This makes breakages easier to detect by revdep-rebuild.
@@ -363,10 +298,10 @@ src_configure() {
 	# Always support proprietary codecs.
 	myconf+=" -Dproprietary_codecs=1"
 
-	# if ! use bindist && ! use system-ffmpeg; then
-	#	# Enable H.624 support in bundled ffmpeg.
-	#	myconf+=" -Dffmpeg_branding=Chrome"
-	# fi
+	if ! use bindist && ! use system-ffmpeg; then
+		# Enable H.624 support in bundled ffmpeg.
+		myconf+=" -Dffmpeg_branding=Chrome"
+	fi
 
 	# Set up Google API keys, see http://www.chromium.org/developers/how-tos/api-keys .
 	# Note: these are for Gentoo use ONLY. For your own distribution,
@@ -413,9 +348,8 @@ src_configure() {
 }
 
 src_compile() {
-	# TODO: add media_unittests after fixing compile (bug #462546).
-	local test_targets=""
-	for x in base cacheinvalidation content crypto \
+	local test_targets
+	for x in base cacheinvalidation crypto \
 		googleurl gpu net printing sql; do
 		test_targets+=" ${x}_unittests"
 	done
@@ -425,7 +359,7 @@ src_compile() {
 		make_targets+=" chrome_sandbox"
 	fi
 	if use test; then
-		make_targets+=" $test_targets"
+		make_targets+=$test_targets
 	fi
 
 	# See bug #410883 for more info about the .host mess.
@@ -470,44 +404,32 @@ src_test() {
 	local excluded_base_unittests=(
 		"ICUStringConversionsTest.*" # bug #350347
 		"MessagePumpLibeventTest.*" # bug #398591
-		"TimeTest.JsTime" # bug #459614
+		"SecurityTest.CallocOverflow" # bug #458396
 	)
 	runtest out/Release/base_unittests "${excluded_base_unittests[@]}"
 
 	runtest out/Release/cacheinvalidation_unittests
-
-	local excluded_content_unittests=(
-		"RendererDateTimePickerTest.*" # bug #465452
-	)
-	runtest out/Release/content_unittests "${excluded_content_unittests[@]}"
-
 	runtest out/Release/crypto_unittests
 	runtest out/Release/googleurl_unittests
 	runtest out/Release/gpu_unittests
 
-	# TODO: add media_unittests after fixing compile (bug #462546).
+	# TODO: re-enable when we get the test data in a separate tarball.
 	# runtest out/Release/media_unittests
 
-	local excluded_net_unittests=(
-		"NetUtilTest.IDNToUnicode*" # bug 361885
-		"NetUtilTest.FormatUrl*" # see above
-		"DnsConfigServiceTest.GetSystemConfig" # bug #394883
-		"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
-		"CertDatabaseNSSTest.TrustIntermediateCa*" # http://crbug.com/224612
-		"URLFetcher*" # bug #425764
-		"HTTPSOCSPTest.*" # bug #426630
-		"HTTPSEVCRLSetTest.*" # see above
-		"HTTPSCRLSetTest.*" # see above
-		"*SpdyFramerTest.BasicCompression*" # bug #465444
-	)
-	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
+	# local excluded_net_unittests=(
+	#	"NetUtilTest.IDNToUnicode*" # bug 361885
+	#	"NetUtilTest.FormatUrl*" # see above
+	#	"DnsConfigServiceTest.GetSystemConfig" # bug #394883
+	#	"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
+	#	"URLFetcher*" # bug #425764
+	#	"HTTPSOCSPTest.*" # bug #426630
+	#	"HTTPSEVCRLSetTest.*" # see above
+	#	"HTTPSCRLSetTest.*" # see above
+	#)
+	# runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
 
 	runtest out/Release/printing_unittests
-
-	local excluded_sql_unittests=(
-		"SQLiteFeaturesTest.FTS2" # bug #461286
-	)
-	runtest out/Release/sql_unittests "${excluded_sql_unittests[@]}"
+	runtest out/Release/sql_unittests
 }
 
 src_install() {
@@ -562,9 +484,9 @@ src_install() {
 	newman out/Release/chrome.1 chromium${CHROMIUM_SUFFIX}.1 || die
 	newman out/Release/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
 
-	# if ! use system-ffmpeg; then
-	#	doexe out/Release/libffmpegsumo.so || die
-	# fi
+	if ! use system-ffmpeg; then
+		doexe out/Release/libffmpegsumo.so || die
+	fi
 
 	# Install icons and desktop entry.
 	local branding size
