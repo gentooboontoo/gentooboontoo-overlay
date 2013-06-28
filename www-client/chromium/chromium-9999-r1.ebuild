@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.199 2013/06/26 04:06:10 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.201 2013/06/27 15:05:23 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -420,6 +420,11 @@ src_configure() {
 	if ! use custom-cflags; then
 		replace-flags "-Os" "-O2"
 		strip-flags
+
+		# Prevent linker from running out of address space, bug #471810 .
+		if use x86; then
+			filter-flags "-g*"
+		fi
 	fi
 
 	# Make sure the build system will use the right tools, bug #340795.
