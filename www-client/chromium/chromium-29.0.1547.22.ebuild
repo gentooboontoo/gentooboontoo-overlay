@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-28.0.1500.71.ebuild,v 1.5 2013/07/17 23:01:53 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-29.0.1547.22.ebuild,v 1.1 2013/07/18 01:08:59 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -9,7 +9,7 @@ CHROMIUM_LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he
 	hi hr hu id it ja kn ko lt lv ml mr ms nb nl pl pt_BR pt_PT ro ru sk sl sr
 	sv sw ta te th tr uk vi zh_CN zh_TW"
 
-inherit chromium eutils flag-o-matic multilib \
+inherit chromium eutils flag-o-matic multilib multiprocessing \
 	pax-utils portability python-any-r1 toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
@@ -19,13 +19,17 @@ SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 ~arm x86"
+KEYWORDS="~amd64 ~arm ~x86"
 IUSE="bindist cups gnome gnome-keyring gps kerberos pulseaudio selinux +system-ffmpeg system-sqlite tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
 
-RDEPEND="app-accessibility/speech-dispatcher:=
+# Native Client binaries may be stripped by the build system, which uses the
+# right tools for it, bug #469144 .
+QA_PRESTRIPPED=".*\.nexe"
+
+RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	app-arch/bzip2:=
 	app-arch/snappy:=
 	system-sqlite? ( dev-db/sqlite:3 )
@@ -33,8 +37,8 @@ RDEPEND="app-accessibility/speech-dispatcher:=
 		dev-libs/libgcrypt:=
 		>=net-print/cups-1.3.11:=
 	)
-	>=dev-lang/v8-3.17.6:=
-	=dev-lang/v8-3.18*
+	>=dev-lang/v8-3.19.17:=
+	=dev-lang/v8-3.19*
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
 	>=dev-libs/icu-49.1.1-r1:=
@@ -82,13 +86,15 @@ DEPEND="${RDEPEND}
 		dev-lang/yasm
 	)
 	dev-lang/perl
+	dev-perl/JSON
+	dev-python/jinja
 	dev-python/ply
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
+	dev-util/ninja
 	sys-apps/hwids
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
-	>=sys-devel/make-3.81-r2
 	virtual/pkgconfig
 	test? ( dev-python/pyftpdlib )"
 RDEPEND+="
@@ -123,29 +129,22 @@ pkg_setup() {
 
 src_prepare() {
 	if ! use arm; then
-		mkdir -p out/Release/obj/gen/sdk/toolchain || die
+		mkdir -p out/Release/gen/sdk/toolchain || die
 		# Do not preserve SELinux context, bug #460892 .
 		cp -a --no-preserve=context /usr/$(get_libdir)/nacl-toolchain-newlib \
-			out/Release/obj/gen/sdk/toolchain/linux_x86_newlib || die
-		touch out/Release/obj/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
+			out/Release/gen/sdk/toolchain/linux_x86_newlib || die
+		touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	fi
 
 	epatch "${FILESDIR}/${PN}-gpsd-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-ffmpeg-r5.patch"
-
-	# Fix build with harfbuzz-0.9.18, bug #472416 .
-	epatch "${FILESDIR}/${PN}-system-harfbuzz-r0.patch"
-
-	epatch "${FILESDIR}/${PN}-nss-3.15.patch"
-
-	epatch "${FILESDIR}/chromium-bug471198.patch"
+	epatch "${FILESDIR}/${PN}-system-ffmpeg-r7.patch"
 
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
 	find third_party -type f \! -iname '*.gyp*' \
 		\! -path 'third_party/WebKit/*' \
-		\! -path 'third_party/angle/*' \
+		\! -path 'third_party/angle_dx11/*' \
 		\! -path 'third_party/cacheinvalidation/*' \
 		\! -path 'third_party/cld/*' \
 		\! -path 'third_party/cros_system_api/*' \
@@ -164,6 +163,7 @@ src_prepare() {
 		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
+		\! -path 'third_party/lzma_sdk/*' \
 		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
 		\! -path 'third_party/mongoose/*' \
@@ -181,6 +181,7 @@ src_prepare() {
 		\! -path 'third_party/tlslite/*' \
 		\! -path 'third_party/trace-viewer/*' \
 		\! -path 'third_party/undoview/*' \
+		\! -path 'third_party/usrsctp/*' \
 		\! -path 'third_party/v8-i18n/*' \
 		\! -path 'third_party/webdriver/*' \
 		\! -path 'third_party/webrtc/*' \
@@ -291,13 +292,8 @@ src_configure() {
 	myconf+="
 		-Dlinux_link_gsettings=1
 		-Dlinux_link_libpci=1
-		-Dlinux_link_libspeechd=1"
-
-	if has_version '>=app-accessibility/speech-dispatcher-0.8'; then
-		myconf+=" -Dlibspeechd_h_prefix=speech-dispatcher/"
-	else
-		myconf+=" -Dlibspeechd_h_prefix="
-	fi
+		-Dlinux_link_libspeechd=1
+		-Dlibspeechd_h_prefix=speech-dispatcher/"
 
 	# TODO: use the file at run time instead of effectively compiling it in.
 	myconf+="
@@ -382,13 +378,14 @@ src_compile() {
 		test_targets+=" ${x}_unittests"
 	done
 
-	local make_targets="chrome chrome_sandbox chromedriver"
+	local ninja_targets="chrome chrome_sandbox chromedriver"
 	if use test; then
-		make_targets+=" $test_targets"
+		ninja_targets+=" $test_targets"
 	fi
 
-	# See bug #410883 for more info about the .host mess.
-	emake ${make_targets} BUILDTYPE=Release V=1 || die
+	# Even though ninja autodetects number of CPUs, we respect
+	# user's options, for debugging with -j 1 or any other reason.
+	ninja -C out/Release -v -j $(makeopts_jobs) ${ninja_targets} || die
 
 	pax-mark m out/Release/chrome
 	if use test; then
@@ -455,7 +452,6 @@ src_test() {
 		"HTTPSEVCRLSetTest.*" # see above
 		"HTTPSCRLSetTest.*" # see above
 		"*SpdyFramerTest.BasicCompression*" # bug #465444
-		"CertVerifyProcTest.EVVerification" #474642
 	)
 	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
 
@@ -483,15 +479,16 @@ src_install() {
 		doins out/Release/libppGoogleNaClPluginChrome.so || die
 	fi
 
-	newexe "${FILESDIR}"/chromium-launcher-r3.sh chromium-launcher.sh || die
-	if [[ "${CHROMIUM_SUFFIX}" != "" ]]; then
-		sed "s:chromium-browser:chromium-browser${CHROMIUM_SUFFIX}:g" \
-			-i "${ED}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
-		sed "s:chromium.desktop:chromium${CHROMIUM_SUFFIX}.desktop:g" \
-			-i "${ED}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
-		sed "s:plugins:plugins --user-data-dir=\${HOME}/.config/chromium${CHROMIUM_SUFFIX}:" \
-			-i "${ED}"/"${CHROMIUM_HOME}"/chromium-launcher.sh || die
+	local sedargs=( -e "s:/usr/lib/:/usr/$(get_libdir)/:g" )
+	if [[ -n ${CHROMIUM_SUFFIX} ]]; then
+		sedargs+=(
+			-e "s:chromium-browser:chromium-browser${CHROMIUM_SUFFIX}:g"
+			-e "s:chromium.desktop:chromium${CHROMIUM_SUFFIX}.desktop:g"
+			-e "s:plugins:plugins --user-data-dir=\${HOME}/.config/chromium${CHROMIUM_SUFFIX}:"
+		)
 	fi
+	sed "${sedargs[@]}" "${FILESDIR}/chromium-launcher-r3.sh" > chromium-launcher.sh || die
+	doexe chromium-launcher.sh
 
 	# It is important that we name the target "chromium-browser",
 	# xdg-utils expect it; bug #355517.
