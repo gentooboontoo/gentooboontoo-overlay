@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.203 2013/07/18 16:11:30 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.204 2013/07/25 15:36:55 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -37,7 +37,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 		>=net-print/cups-1.3.11:=
 	)
 	>=dev-lang/v8-3.19.17:=
-	=dev-lang/v8-3.19*
+	=dev-lang/v8-3.20*
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
 	>=dev-libs/icu-49.1.1-r1:=
@@ -58,7 +58,6 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	>=media-libs/libjpeg-turbo-1.2.0-r1:=
 	media-libs/libpng:0=
 	media-libs/libvpx:=
-	>=media-libs/libwebp-0.2.0_rc1:=
 	!arm? ( !x86? ( >=media-libs/mesa-9.1:=[gles2] ) )
 	media-libs/opus:=
 	media-libs/speex:=
@@ -81,7 +80,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
 	!arm? (
-		>=dev-lang/nacl-toolchain-newlib-0_p9093
+		>=dev-lang/nacl-toolchain-newlib-0_p11846
 		dev-lang/yasm
 	)
 	dev-lang/perl
@@ -225,6 +224,7 @@ src_prepare() {
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
 		\! -path 'third_party/libsrtp/*' \
+		\! -path 'third_party/libwebp/*' \
 		\! -path 'third_party/libxml/chromium/*' \
 		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
@@ -292,6 +292,7 @@ src_configure() {
 	# Use system-provided libraries.
 	# TODO: use_system_hunspell (upstream changes needed).
 	# TODO: use_system_libsrtp (bug #459932).
+	# TODO: use_system_libwebp (requires internal header format_constants.h).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 	myconf+="
@@ -305,7 +306,6 @@ src_configure() {
 		-Duse_system_libpng=1
 		-Duse_system_libusb=1
 		-Duse_system_libvpx=1
-		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
 		-Duse_system_libxslt=1
 		-Duse_system_minizip=1
