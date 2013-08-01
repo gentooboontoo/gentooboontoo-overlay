@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.204 2013/07/25 15:36:55 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.206 2013/07/31 22:31:02 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -58,6 +58,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	>=media-libs/libjpeg-turbo-1.2.0-r1:=
 	media-libs/libpng:0=
 	media-libs/libvpx:=
+	>=media-libs/libwebp-0.3.1:=
 	!arm? ( !x86? ( >=media-libs/mesa-9.1:=[gles2] ) )
 	media-libs/opus:=
 	media-libs/speex:=
@@ -70,7 +71,6 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	sys-apps/pciutils:=
 	sys-libs/zlib:=[minizip]
 	virtual/udev
-	virtual/libusb:1=
 	x11-libs/gtk+:2=
 	x11-libs/libXinerama:=
 	x11-libs/libXScrnSaver:=
@@ -224,7 +224,7 @@ src_prepare() {
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
 		\! -path 'third_party/libsrtp/*' \
-		\! -path 'third_party/libwebp/*' \
+		\! -path 'third_party/libusb/*' \
 		\! -path 'third_party/libxml/chromium/*' \
 		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
@@ -292,7 +292,7 @@ src_configure() {
 	# Use system-provided libraries.
 	# TODO: use_system_hunspell (upstream changes needed).
 	# TODO: use_system_libsrtp (bug #459932).
-	# TODO: use_system_libwebp (requires internal header format_constants.h).
+	# TODO: use_system_libusb (http://crbug.com/266149).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 	myconf+="
@@ -304,8 +304,8 @@ src_configure() {
 		-Duse_system_libevent=1
 		-Duse_system_libjpeg=1
 		-Duse_system_libpng=1
-		-Duse_system_libusb=1
 		-Duse_system_libvpx=1
+		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
 		-Duse_system_libxslt=1
 		-Duse_system_minizip=1
@@ -368,6 +368,10 @@ src_configure() {
 	# TODO: use the file at run time instead of effectively compiling it in.
 	myconf+="
 		-Dusb_ids_path=/usr/share/misc/usb.ids"
+
+	# Save space by removing DLOG and DCHECK messages (about 6% reduction).
+	myconf+="
+		-Dlogging_like_official_build=1"
 
 	# Enable SUID sandbox.
 	myconf+="
@@ -470,26 +474,40 @@ src_compile() {
 
 src_test() {
 	# For more info see bug #350349.
-	local mylocale='en_US.utf8'
-	if ! locale -a | grep -q "$mylocale"; then
-		eerror "${PN} requires ${mylocale} locale for tests"
+	local LC_ALL="en_US.utf8"
+
+	if ! locale -a | grep -q "${LC_ALL}"; then
+		eerror "${PN} requires ${LC_ALL} locale for tests"
 		eerror "Please read the following guides for more information:"
 		eerror "  http://www.gentoo.org/doc/en/guide-localization.xml"
 		eerror "  http://www.gentoo.org/doc/en/utf-8.xml"
-		die "locale ${mylocale} is not supported"
+		die "locale ${LC_ALL} is not supported"
 	fi
+
+	# If we have the right locale, export it to the environment
+	export LC_ALL
 
 	# For more info see bug #370957.
 	if [[ $UID -eq 0 ]]; then
 		die "Tests must be run as non-root. Please use FEATURES=userpriv."
 	fi
 
+	# virtualmake dies on failure, so we run our tests in a function
+	VIRTUALX_COMMAND="chromium_test" virtualmake
+}
+
+chromium_test() {
+	# Keep track of the cumulative exit status for all tests
+	local exitstatus=0
+
 	runtest() {
 		local cmd=$1
 		shift
-		local filter="--gtest_filter=$(IFS=:; echo "-${*}")"
-		einfo "${cmd}" "${filter}"
-		LC_ALL="${mylocale}" VIRTUALX_COMMAND="${cmd}" virtualmake "${filter}"
+		local IFS=:
+		set -- "${cmd}" "--gtest_filter=-$*"
+		einfo "$@"
+		"$@"
+		(( exitstatus |= $? ))
 	}
 
 	local excluded_base_unittests=(
@@ -533,6 +551,8 @@ src_test() {
 		"SQLiteFeaturesTest.FTS2" # bug #461286
 	)
 	runtest out/Release/sql_unittests "${excluded_sql_unittests[@]}"
+
+	return ${exitstatus}
 }
 
 src_install() {
