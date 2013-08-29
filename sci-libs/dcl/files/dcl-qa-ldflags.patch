@@ -1,0 +1,22 @@
+--- Mkinclude.in.orig	2011-02-18 06:49:35.000000000 +0100
++++ Mkinclude.in	2013-08-29 16:35:57.693857009 +0200
+@@ -85,7 +85,7 @@
+ DEFS		= @DEFS@
+ CFLAGS		= @CFLAGS@ $(GTK_CFLAGS) $(XINCPATH) $(DCLINCPATH)
+ LD              = ld
+-LDFLAGS         = $(DCLLIBPATH) $(XLIBPATH)
++LDFLAGS         = @LDFLAGS@ $(DCLLIBPATH) $(XLIBPATH)
+ LDLIBS          = $(DCLLIBOPT) $(F2CLIBOPT) $(GTK_LIBS) @X_EXTRA_LIBS@ $(XLIBOPT) @FLIBS@ @LINKOPT@ $(MATHLIBOPT)
+ AR              = ar
+ ARFLAGS         = vru
+--- src/env2/dclexec/Makefile.orig	2011-02-18 06:50:11.000000000 +0100
++++ src/env2/dclexec/Makefile	2013-08-29 16:55:19.029196695 +0200
+@@ -16,7 +16,7 @@
+ 	@$(CP) $(BINNAME) $(LBINDIR)/$(BINNAME)
+
+ $(BINNAME): $(SRCNAME)
+-	$(CC) $(CFLAGS) -o $(BINNAME) $(SRCNAME)
++	$(CC) $(LDFLAGS) $(CFLAGS) -o $(BINNAME) $(SRCNAME)
+
+ clean:
+ 	$(RM) *.o *~ $(BINNAME) core
