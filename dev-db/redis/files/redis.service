@@ -13,6 +13,9 @@ Group=redis
 # Redis configuration file.
 Environment=REDIS_CONF=/etc/redis.conf
 
+# Redis dump directory.
+WorkingDirectory=/var/lib/redis
+
 # Redis pid file.
 # (Be sure to change the main redis configuration file as well if you change
 # this from the default.)
