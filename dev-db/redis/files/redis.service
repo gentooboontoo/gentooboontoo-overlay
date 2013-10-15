@@ -1,0 +1,34 @@
+[Unit]
+Description=Redis Server
+After=network.target
+
+[Service]
+
+# Redis user.
+User=redis
+
+# Redis group.
+Group=redis
+
+# Redis configuration file.
+Environment=REDIS_CONF=/etc/redis.conf
+
+# Redis pid file.
+# (Be sure to change the main redis configuration file as well if you change
+# this from the default.)
+PIDFile=/var/run/redis/redis.pid
+
+# Default redis config file in Gentoo has daemonize enabled,
+# so startup type should be 'forking'.
+# If not, set to 'simple'
+Type=forking
+
+# Run ExecStartPre with root-permissions
+PermissionsStartOnly=true
+ExecStartPre=/bin/mkdir -p /var/run/redis
+ExecStartPre=/bin/chown redis:redis /var/run/redis
+ExecStart=/usr/sbin/redis-server ${REDIS_CONF}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
