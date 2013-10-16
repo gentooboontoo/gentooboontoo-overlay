@@ -1,6 +1,54 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2013 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.954 2013/09/28 22:31:42 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.963 2013/10/16 00:12:58 floppym Exp $
+
+*chromium-30.0.1599.101 (16 Oct 2013)
+
+  16 Oct 2013; Mike Gilbert <floppym@gentoo.org> +chromium-30.0.1599.101.ebuild,
+  -chromium-30.0.1599.66-r1.ebuild:
+  Stable channel bump.
+
+*chromium-32.0.1664.3-r1 (15 Oct 2013)
+*chromium-31.0.1650.12-r1 (15 Oct 2013)
+*chromium-30.0.1599.66-r1 (15 Oct 2013)
+
+  15 Oct 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-30.0.1599.66-r1.ebuild, +chromium-31.0.1650.12-r1.ebuild,
+  +chromium-32.0.1664.3-r1.ebuild:
+  Fix vp9 support by switching to bundled libvpx (bug #487926 by Paul Marks).
+
+*chromium-32.0.1664.3 (10 Oct 2013)
+
+  10 Oct 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-32.0.1664.3.ebuild:
+  Dev channel bump.
+
+  10 Oct 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-9999-r1.ebuild:
+  Remove live ebuild now that we have weekly dev channel releases.
+
+  09 Oct 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-29.0.1547.57.ebuild, -chromium-29.0.1547.65.ebuild,
+  -chromium-30.0.1599.65.ebuild, -chromium-31.0.1626.0.ebuild,
+  chromium-31.0.1650.12.ebuild, chromium-9999-r1.ebuild:
+  Fix bug #487144 by wbrana. Remove old.
+
+*chromium-31.0.1650.12 (08 Oct 2013)
+
+  08 Oct 2013; Mike Gilbert <floppym@gentoo.org> +chromium-31.0.1650.12.ebuild:
+  Beta channel bump.
+
+  02 Oct 2013; Agostino Sarubbo <ago@gentoo.org> chromium-30.0.1599.66.ebuild:
+  Stable for x86, wrt bug #486742
+
+  02 Oct 2013; Agostino Sarubbo <ago@gentoo.org> chromium-30.0.1599.66.ebuild:
+  Stable for amd64, wrt bug #486742
+
+*chromium-30.0.1599.66 (02 Oct 2013)
+
+  02 Oct 2013; Mike Gilbert <floppym@gentoo.org> +chromium-30.0.1599.66.ebuild,
+  -chromium-30.0.1599.47.ebuild:
+  Stable channel bump.
 
   28 Sep 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
   files/chromium-system-icu-r0.patch, chromium-31.0.1650.0.ebuild:
