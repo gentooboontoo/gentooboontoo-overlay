@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-30.0.1599.47.ebuild,v 1.1 2013/09/25 18:54:10 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-31.0.1650.12.ebuild,v 1.2 2013/10/09 03:49:34 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -37,8 +37,6 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 		dev-libs/libgcrypt:=
 		>=net-print/cups-1.3.11:=
 	)
-	>=dev-lang/v8-3.19.17:=
-	=dev-lang/v8-3.20*
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
 	>=dev-libs/icu-49.1.1-r1:=
@@ -59,7 +57,6 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	>=media-libs/libjpeg-turbo-1.2.0-r1:=
 	media-libs/libpng:0=
 	media-libs/libvpx:=
-	>=media-libs/libwebp-0.3.1:=
 	media-libs/opus:=
 	media-libs/speex:=
 	pulseaudio? ( media-sound/pulseaudio:= )
@@ -89,7 +86,10 @@ DEPEND="${RDEPEND}
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	virtual/pkgconfig
-	test? ( dev-python/pyftpdlib )"
+	test? (
+		dev-libs/openssl:0
+		dev-python/pyftpdlib
+	)"
 RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
@@ -128,61 +128,74 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
+	epatch "${FILESDIR}/${PN}-chromedriver-r0.patch"
 	epatch "${FILESDIR}/${PN}-gpsd-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-ply-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-icu-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-jinja-r0.patch"
 
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
-	find third_party -type f \! -iname '*.gyp*' \
-		\! -path 'third_party/WebKit/*' \
-		\! -path 'third_party/angle_dx11/*' \
-		\! -path 'third_party/cacheinvalidation/*' \
-		\! -path 'third_party/cld/*' \
-		\! -path 'third_party/cros_system_api/*' \
-		\! -path 'third_party/ffmpeg/*' \
-		\! -path 'third_party/flot/*' \
-		\! -path 'third_party/hunspell/*' \
-		\! -path 'third_party/iccjpeg/*' \
-		\! -path 'third_party/jstemplate/*' \
-		\! -path 'third_party/khronos/*' \
-		\! -path 'third_party/leveldatabase/*' \
-		\! -path 'third_party/libjingle/*' \
-		\! -path 'third_party/libphonenumber/*' \
-		\! -path 'third_party/libsrtp/*' \
-		\! -path 'third_party/libusb/*' \
-		\! -path 'third_party/libxml/chromium/*' \
-		\! -path 'third_party/libXNVCtrl/*' \
-		\! -path 'third_party/libyuv/*' \
-		\! -path 'third_party/lss/*' \
-		\! -path 'third_party/lzma_sdk/*' \
-		\! -path 'third_party/mesa/*' \
-		\! -path 'third_party/modp_b64/*' \
-		\! -path 'third_party/mongoose/*' \
-		\! -path 'third_party/mt19937ar/*' \
-		\! -path 'third_party/npapi/*' \
-		\! -path 'third_party/openssl/*' \
-		\! -path 'third_party/ots/*' \
-		\! -path 'third_party/pywebsocket/*' \
-		\! -path 'third_party/qcms/*' \
-		\! -path 'third_party/sfntly/*' \
-		\! -path 'third_party/skia/*' \
-		\! -path 'third_party/smhasher/*' \
-		\! -path 'third_party/sqlite/*' \
-		\! -path 'third_party/tcmalloc/*' \
-		\! -path 'third_party/tlslite/*' \
-		\! -path 'third_party/trace-viewer/*' \
-		\! -path 'third_party/undoview/*' \
-		\! -path 'third_party/usrsctp/*' \
-		\! -path 'third_party/webdriver/*' \
-		\! -path 'third_party/webrtc/*' \
-		\! -path 'third_party/widevine/*' \
-		\! -path 'third_party/x86inc/*' \
-		\! -path 'third_party/zlib/google/*' \
-		-delete || die
-
-	# Remove bundled v8.
-	find v8 -type f \! -iname '*.gyp*' -delete || die
+	build/linux/unbundle/remove_bundled_libraries.py \
+		'base/third_party/dmg_fp' \
+		'base/third_party/dynamic_annotations' \
+		'base/third_party/icu' \
+		'base/third_party/nspr' \
+		'base/third_party/symbolize' \
+		'base/third_party/valgrind' \
+		'base/third_party/xdg_mime' \
+		'base/third_party/xdg_user_dirs' \
+		'breakpad/src/third_party/curl' \
+		'chrome/third_party/mozilla_security_manager' \
+		'crypto/third_party/nss' \
+		'net/third_party/mozilla_security_manager' \
+		'net/third_party/nss' \
+		'third_party/WebKit' \
+		'third_party/angle_dx11' \
+		'third_party/cacheinvalidation' \
+		'third_party/cld' \
+		'third_party/cros_system_api' \
+		'third_party/ffmpeg' \
+		'third_party/flot' \
+		'third_party/hunspell' \
+		'third_party/iccjpeg' \
+		'third_party/jstemplate' \
+		'third_party/khronos' \
+		'third_party/leveldatabase' \
+		'third_party/libjingle' \
+		'third_party/libphonenumber' \
+		'third_party/libsrtp' \
+		'third_party/libusb' \
+		'third_party/libwebp' \
+		'third_party/libxml/chromium' \
+		'third_party/libXNVCtrl' \
+		'third_party/libyuv' \
+		'third_party/lss' \
+		'third_party/lzma_sdk' \
+		'third_party/mesa' \
+		'third_party/modp_b64' \
+		'third_party/mt19937ar' \
+		'third_party/npapi' \
+		'third_party/ots' \
+		'third_party/pywebsocket' \
+		'third_party/qcms' \
+		'third_party/sfntly' \
+		'third_party/skia' \
+		'third_party/smhasher' \
+		'third_party/sqlite' \
+		'third_party/tcmalloc' \
+		'third_party/tlslite' \
+		'third_party/trace-viewer' \
+		'third_party/undoview' \
+		'third_party/usrsctp' \
+		'third_party/webdriver' \
+		'third_party/webrtc' \
+		'third_party/widevine' \
+		'third_party/x86inc' \
+		'third_party/zlib/google' \
+		'url/third_party/mozilla' \
+		'v8/src/third_party/valgrind' \
+		--do-remove || die
 }
 
 src_configure() {
@@ -219,6 +232,7 @@ src_configure() {
 	# TODO: use_system_libusb (http://crbug.com/266149).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
+	# TODO: use_system_libwebp (http://crbug.com/288019).
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
@@ -229,17 +243,16 @@ src_configure() {
 		-Duse_system_libjpeg=1
 		-Duse_system_libpng=1
 		-Duse_system_libvpx=1
-		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
 		-Duse_system_libxslt=1
 		-Duse_system_minizip=1
 		-Duse_system_nspr=1
+		-Duse_system_openssl=1
 		-Duse_system_opus=1
 		-Duse_system_protobuf=1
 		-Duse_system_re2=1
 		-Duse_system_snappy=1
 		-Duse_system_speex=1
-		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
 		-Duse_system_zlib=1"
 
@@ -339,6 +352,12 @@ src_configure() {
 		die "Failed to determine target arch, got '$myarch'."
 	fi
 
+	if host-is-pax; then
+		# Prevent the build from failing (bug #301880, bug #487144). The performance
+		# difference is very small.
+		myconf+=" -Dv8_use_snapshot=0"
+	fi
+
 	# Make sure that -Werror doesn't get added to CFLAGS by the build system.
 	# Depending on GCC version the warnings are different and we don't want
 	# the build to fail because of that.
@@ -433,14 +452,7 @@ chromium_test() {
 		(( exitstatus |= st ))
 	}
 
-	local excluded_base_unittests=(
-		"ICUStringConversionsTest.*" # bug #350347
-		"MessagePumpLibeventTest.*" # bug #398591
-		"TimeTest.JsTime" # bug #459614
-		"SecurityTest.NewOverflow" # bug #465724
-	)
-	runtest out/Release/base_unittests "${excluded_base_unittests[@]}"
-
+	runtest out/Release/base_unittests
 	runtest out/Release/cacheinvalidation_unittests
 
 	local excluded_content_unittests=(
@@ -457,24 +469,18 @@ chromium_test() {
 	local excluded_net_unittests=(
 		"NetUtilTest.IDNToUnicode*" # bug 361885
 		"NetUtilTest.FormatUrl*" # see above
-		"DnsConfigServiceTest.GetSystemConfig" # bug #394883
-		"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
-		"CertDatabaseNSSTest.TrustIntermediateCa*" # http://crbug.com/224612
-		"URLFetcher*" # bug #425764
-		"HTTPSOCSPTest.*" # bug #426630
-		"HTTPSEVCRLSetTest.*" # see above
-		"HTTPSCRLSetTest.*" # see above
 		"SpdyFramerTests/SpdyFramerTest.CreatePushPromiseCompressed/2" # bug #478168
-		"*SpdyFramerTest.BasicCompression*" # bug #465444
+		"HostResolverImplTest.FlushCacheOnIPAddressChange" # bug #481812
+		"HostResolverImplTest.ResolveFromCache" # see above
+		"ProxyResolverV8TracingTest.*" # see above
+		"SSLClientSocketTest.ConnectMismatched" # see above
+		"UDPSocketTest.*" # see above
+		"*EndToEndTest*" # see above
 	)
 	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
 
 	runtest out/Release/printing_unittests
-
-	local excluded_sql_unittests=(
-		"SQLiteFeaturesTest.FTS2" # bug #461286
-	)
-	runtest out/Release/sql_unittests "${excluded_sql_unittests[@]}"
+	runtest out/Release/sql_unittests
 
 	return ${exitstatus}
 }
