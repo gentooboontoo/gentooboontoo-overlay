@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-31.0.1650.12-r1.ebuild,v 1.1 2013/10/15 03:55:39 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-32.0.1671.3.ebuild,v 1.3 2013/10/20 02:47:13 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -20,7 +20,7 @@ SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="bindist cups gnome gnome-keyring gps kerberos neon pulseaudio selinux system-sqlite tcmalloc"
+IUSE="bindist cups gnome gnome-keyring kerberos neon pulseaudio selinux system-sqlite tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
@@ -50,7 +50,6 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	dev-libs/re2:=
 	gnome? ( >=gnome-base/gconf-2.24.0:= )
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
-	gps? ( >=sci-geosciences/gpsd-3.7:=[shm] )
 	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/flac:=
 	media-libs/harfbuzz:=[icu(+)]
@@ -76,7 +75,7 @@ DEPEND="${RDEPEND}
 	)
 	dev-lang/perl
 	dev-perl/JSON
-	dev-python/jinja
+	>=dev-python/jinja-2.7
 	dev-python/ply
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
@@ -127,10 +126,7 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
-	epatch "${FILESDIR}/${PN}-chromedriver-r0.patch"
-	epatch "${FILESDIR}/${PN}-gpsd-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-icu-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-jinja-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-jinja-r1.patch"
 
 	epatch_user
 
@@ -269,8 +265,6 @@ src_configure() {
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
-		$(gyp_use gps linux_use_libgps)
-		$(gyp_use gps linux_link_libgps)
 		$(gyp_use kerberos)
 		$(gyp_use pulseaudio)"
 
@@ -322,10 +316,11 @@ src_configure() {
 
 	local myarch="$(tc-arch)"
 	if [[ $myarch = amd64 ]] ; then
-		myconf+=" -Dtarget_arch=x64"
+		target_arch=x64
 	elif [[ $myarch = x86 ]] ; then
-		myconf+=" -Dtarget_arch=ia32"
+		target_arch=ia32
 	elif [[ $myarch = arm ]] ; then
+		target_arch=arm
 		# TODO: re-enable NaCl (NativeClient).
 		local CTARGET=${CTARGET:-${CHOST}}
 		if [[ $(tc-is-softfloat) == "no" ]]; then
@@ -340,19 +335,14 @@ src_configure() {
 		else
 			myconf+=" -Darmv7=0"
 		fi
-		myconf+=" -Dtarget_arch=arm
-			-Dsysroot=
+		myconf+=" -Dsysroot=
 			$(gyp_use neon arm_neon)
 			-Ddisable_nacl=1"
 	else
 		die "Failed to determine target arch, got '$myarch'."
 	fi
 
-	if host-is-pax; then
-		# Prevent the build from failing (bug #301880, bug #487144). The performance
-		# difference is very small.
-		myconf+=" -Dv8_use_snapshot=0"
-	fi
+	myconf+=" -Dtarget_arch=${target_arch}"
 
 	# Make sure that -Werror doesn't get added to CFLAGS by the build system.
 	# Depending on GCC version the warnings are different and we don't want
@@ -395,6 +385,10 @@ src_compile() {
 	if use test; then
 		ninja_targets+=" $test_targets"
 	fi
+
+	# Build mksnapshot and pax-mark it.
+	ninja -C out/Release -v -j $(makeopts_jobs) mksnapshot.${target_arch} || die
+	pax-mark m out/Release/mksnapshot.${target_arch}
 
 	# Even though ninja autodetects number of CPUs, we respect
 	# user's options, for debugging with -j 1 or any other reason.

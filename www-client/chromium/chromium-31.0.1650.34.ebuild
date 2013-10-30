@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-32.0.1664.3.ebuild,v 1.1 2013/10/10 19:28:41 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-31.0.1650.34.ebuild,v 1.1 2013/10/26 23:00:35 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -20,7 +20,7 @@ SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="bindist cups gnome gnome-keyring kerberos neon pulseaudio selinux system-sqlite tcmalloc"
+IUSE="bindist cups gnome gnome-keyring gps kerberos neon pulseaudio selinux system-sqlite tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
@@ -50,12 +50,12 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	dev-libs/re2:=
 	gnome? ( >=gnome-base/gconf-2.24.0:= )
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
+	gps? ( >=sci-geosciences/gpsd-3.7:=[shm] )
 	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/flac:=
 	media-libs/harfbuzz:=[icu(+)]
 	>=media-libs/libjpeg-turbo-1.2.0-r1:=
 	media-libs/libpng:0=
-	media-libs/libvpx:=
 	media-libs/opus:=
 	media-libs/speex:=
 	pulseaudio? ( media-sound/pulseaudio:= )
@@ -76,7 +76,7 @@ DEPEND="${RDEPEND}
 	)
 	dev-lang/perl
 	dev-perl/JSON
-	dev-python/jinja
+	>=dev-python/jinja-2.7
 	dev-python/ply
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
@@ -128,6 +128,7 @@ src_prepare() {
 	# fi
 
 	epatch "${FILESDIR}/${PN}-chromedriver-r0.patch"
+	epatch "${FILESDIR}/${PN}-gpsd-r0.patch"
 	epatch "${FILESDIR}/${PN}-system-icu-r0.patch"
 	epatch "${FILESDIR}/${PN}-system-jinja-r0.patch"
 
@@ -164,6 +165,7 @@ src_prepare() {
 		'third_party/libphonenumber' \
 		'third_party/libsrtp' \
 		'third_party/libusb' \
+		'third_party/libvpx' \
 		'third_party/libwebp' \
 		'third_party/libxml/chromium' \
 		'third_party/libXNVCtrl' \
@@ -228,6 +230,7 @@ src_configure() {
 	# TODO: use_system_hunspell (upstream changes needed).
 	# TODO: use_system_libsrtp (bug #459932).
 	# TODO: use_system_libusb (http://crbug.com/266149).
+	# TODO: use_system_libvpx (bug #487926).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 	# TODO: use_system_libwebp (http://crbug.com/288019).
@@ -240,7 +243,6 @@ src_configure() {
 		-Duse_system_libevent=1
 		-Duse_system_libjpeg=1
 		-Duse_system_libpng=1
-		-Duse_system_libvpx=1
 		-Duse_system_libxml=1
 		-Duse_system_libxslt=1
 		-Duse_system_minizip=1
@@ -260,10 +262,6 @@ src_configure() {
 			-Duse_system_yasm=1"
 	fi
 
-	# TODO: re-enable on vp9 libvpx release (http://crbug.com/174287).
-	myconf+="
-		-Dmedia_use_libvpx=0"
-
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
 	myconf+="
@@ -271,6 +269,8 @@ src_configure() {
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
+		$(gyp_use gps linux_use_libgps)
+		$(gyp_use gps linux_link_libgps)
 		$(gyp_use kerberos)
 		$(gyp_use pulseaudio)"
 
