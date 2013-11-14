@@ -1,6 +1,47 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2013 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.972 2013/11/04 03:08:11 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.980 2013/11/13 19:25:01 phajdan.jr Exp $
+
+*chromium-33.0.1707.0 (13 Nov 2013)
+
+  13 Nov 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-gnome-keyring-r0.patch, -chromium-30.0.1599.101.ebuild,
+  -chromium-31.0.1650.39.ebuild, +chromium-33.0.1707.0.ebuild:
+  Dev channel bump. Remove old.
+
+  13 Nov 2013; Agostino Sarubbo <ago@gentoo.org> chromium-31.0.1650.48.ebuild:
+  Stable for amd64, wrt bug #491128
+
+  13 Nov 2013; Agostino Sarubbo <ago@gentoo.org> chromium-31.0.1650.48.ebuild:
+  Stable for x86, wrt bug #491128
+
+  12 Nov 2013; Mike Gilbert <floppym@gentoo.org> chromium-30.0.1599.101.ebuild,
+  chromium-31.0.1650.48.ebuild, chromium-32.0.1700.6.ebuild:
+  Add dependency on >=x11-libs/libXi-1.6.0, bug 490810 by Zeno Davatz.
+
+*chromium-31.0.1650.48 (12 Nov 2013)
+
+  12 Nov 2013; Mike Gilbert <floppym@gentoo.org> +chromium-31.0.1650.48.ebuild,
+  -chromium-31.0.1650.34.ebuild:
+  Bump (probably for stable channel).
+
+*chromium-32.0.1700.6 (12 Nov 2013)
+
+  12 Nov 2013; Mike Gilbert <floppym@gentoo.org> +chromium-32.0.1700.6.ebuild,
+  -chromium-32.0.1678.0.ebuild:
+  Beta channel bump.
+
+  08 Nov 2013; Mike Gilbert <floppym@gentoo.org> chromium-30.0.1599.101.ebuild,
+  chromium-31.0.1650.39.ebuild, chromium-32.0.1700.2.ebuild:
+  Update nss dependency, bug 490756.
+
+*chromium-32.0.1700.2 (08 Nov 2013)
+
+  08 Nov 2013; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +files/chromium-blink-crash-r0.patch, -chromium-30.0.1599.66.ebuild,
+  -chromium-32.0.1671.3.ebuild, +chromium-32.0.1700.2.ebuild,
+  +files/chromium-system-jinja-r2.patch:
+  Dev channel bump. Remove old.
 
 *chromium-31.0.1650.39 (04 Nov 2013)
 
