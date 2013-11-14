@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-32.0.1678.0.ebuild,v 1.1 2013/10/23 19:08:06 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-33.0.1707.0.ebuild,v 1.1 2013/11/13 19:25:01 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -14,7 +14,7 @@ inherit chromium eutils flag-o-matic multilib multiprocessing pax-utils \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz
 	test? ( https://commondatastorage.googleapis.com/chromium-browser-official/${P}-testdata.tar.xz )"
 
 LICENSE="BSD"
@@ -45,7 +45,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	dev-libs/libxml2:=[icu]
 	dev-libs/libxslt:=
 	dev-libs/nspr:=
-	>=dev-libs/nss-3.12.3:=
+	>=dev-libs/nss-3.14.3:=
 	>=dev-libs/protobuf-2.5.0:=
 	dev-libs/re2:=
 	gnome? ( >=gnome-base/gconf-2.24.0:= )
@@ -63,6 +63,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	sys-libs/zlib:=[minizip]
 	virtual/udev
 	x11-libs/gtk+:2=
+	>=x11-libs/libXi-1.6.0:=
 	x11-libs/libXinerama:=
 	x11-libs/libXScrnSaver:=
 	x11-libs/libXtst:=
@@ -150,7 +151,8 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
-	epatch "${FILESDIR}/${PN}-system-jinja-r1.patch"
+	epatch "${FILESDIR}/${PN}-system-jinja-r2.patch"
+	epatch "${FILESDIR}/${PN}-gnome-keyring-r0.patch"
 
 	epatch_user
 
@@ -197,6 +199,7 @@ src_prepare() {
 		'third_party/mt19937ar' \
 		'third_party/npapi' \
 		'third_party/ots' \
+		'third_party/polymer' \
 		'third_party/pywebsocket' \
 		'third_party/qcms' \
 		'third_party/sfntly' \

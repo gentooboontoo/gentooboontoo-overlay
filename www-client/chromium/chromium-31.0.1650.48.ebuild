@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-31.0.1650.34.ebuild,v 1.1 2013/10/26 23:00:35 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-31.0.1650.48.ebuild,v 1.4 2013/11/13 07:47:56 ago Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -19,7 +19,7 @@ SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~x86"
+KEYWORDS="amd64 ~arm x86"
 IUSE="bindist cups gnome gnome-keyring gps kerberos neon pulseaudio selinux system-sqlite tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
@@ -45,7 +45,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	dev-libs/libxml2:=[icu]
 	dev-libs/libxslt:=
 	dev-libs/nspr:=
-	>=dev-libs/nss-3.12.3:=
+	>=dev-libs/nss-3.14.3:=
 	dev-libs/protobuf:=
 	dev-libs/re2:=
 	gnome? ( >=gnome-base/gconf-2.24.0:= )
@@ -64,6 +64,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	sys-libs/zlib:=[minizip]
 	virtual/udev
 	x11-libs/gtk+:2=
+	>=x11-libs/libXi-1.6.0:=
 	x11-libs/libXinerama:=
 	x11-libs/libXScrnSaver:=
 	x11-libs/libXtst:=
