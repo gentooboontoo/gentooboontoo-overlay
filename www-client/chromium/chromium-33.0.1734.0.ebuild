@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-32.0.1700.19.ebuild,v 1.5 2013/12/03 18:59:46 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-33.0.1734.0.ebuild,v 1.1 2013/12/11 05:32:14 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -14,13 +14,13 @@ inherit chromium eutils flag-o-matic multilib multiprocessing pax-utils \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz
 	test? ( https://commondatastorage.googleapis.com/chromium-browser-official/${P}-testdata.tar.xz )"
 
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="bindist cups gnome gnome-keyring kerberos neon pulseaudio selinux system-sqlite +tcmalloc"
+IUSE="aura bindist cups gnome gnome-keyring kerberos neon pulseaudio selinux system-sqlite +tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
@@ -156,6 +156,7 @@ src_prepare() {
 
 	epatch "${FILESDIR}/${PN}-system-jinja-r2.patch"
 	epatch "${FILESDIR}/${PN}-build_ffmpeg-r0.patch"
+	epatch "${FILESDIR}/${PN}-gn-r0.patch"
 
 	epatch_user
 
@@ -186,6 +187,7 @@ src_prepare() {
 		'third_party/jstemplate' \
 		'third_party/khronos' \
 		'third_party/leveldatabase' \
+		'third_party/libaddressinput' \
 		'third_party/libjingle' \
 		'third_party/libphonenumber' \
 		'third_party/libsrtp' \
@@ -202,8 +204,10 @@ src_prepare() {
 		'third_party/mt19937ar' \
 		'third_party/npapi' \
 		'third_party/ots' \
+		'third_party/polymer' \
 		'third_party/pywebsocket' \
 		'third_party/qcms' \
+		'third_party/readability' \
 		'third_party/sfntly' \
 		'third_party/skia' \
 		'third_party/smhasher' \
@@ -286,6 +290,7 @@ src_configure() {
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
 	myconf+="
+		$(gyp_use aura)
 		$(gyp_use cups)
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
@@ -420,6 +425,23 @@ src_configure() {
 	egyp_chromium ${myconf} || die
 }
 
+eninja() {
+	if [[ -z ${NINJAOPTS+set} ]]; then
+		local jobs=$(makeopts_jobs)
+		local loadavg=$(makeopts_loadavg)
+
+		if [[ ${MAKEOPTS} == *-j* && ${jobs} != 999 ]]; then
+			NINJAOPTS+=" -j ${jobs}"
+		fi
+		if [[ ${MAKEOPTS} == *-l* && ${loadavg} != 999 ]]; then
+			NINJAOPTS+=" -l ${loadavg}"
+		fi
+	fi
+	set -- ninja -v ${NINJAOPTS} "$@"
+	echo "$@"
+	"$@"
+}
+
 src_compile() {
 	# TODO: add media_unittests after fixing compile (bug #462546).
 	local test_targets=""
@@ -434,12 +456,12 @@ src_compile() {
 	fi
 
 	# Build mksnapshot and pax-mark it.
-	ninja -C out/Release -v -j $(makeopts_jobs) mksnapshot.${target_arch} || die
+	eninja -C out/Release mksnapshot.${target_arch} || die
 	pax-mark m out/Release/mksnapshot.${target_arch}
 
 	# Even though ninja autodetects number of CPUs, we respect
 	# user's options, for debugging with -j 1 or any other reason.
-	ninja -C out/Release -v -j $(makeopts_jobs) ${ninja_targets} || die
+	eninja -C out/Release ${ninja_targets} || die
 
 	pax-mark m out/Release/chrome
 	if use test; then

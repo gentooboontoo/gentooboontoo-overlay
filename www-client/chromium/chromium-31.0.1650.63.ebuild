@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-33.0.1711.3.ebuild,v 1.5 2013/12/03 18:59:46 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-31.0.1650.63.ebuild,v 1.3 2013/12/06 20:41:53 ago Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -9,18 +9,18 @@ CHROMIUM_LANGS="am ar bg bn ca cs da de el en_GB es es_LA et fa fi fil fr gu he
 	hi hr hu id it ja kn ko lt lv ml mr ms nb nl pl pt_BR pt_PT ro ru sk sl sr
 	sv sw ta te th tr uk vi zh_CN zh_TW"
 
-inherit chromium eutils flag-o-matic multilib multiprocessing pax-utils \
-	portability python-any-r1 readme.gentoo toolchain-funcs versionator virtualx
+inherit chromium eutils flag-o-matic multilib multiprocessing \
+	pax-utils portability python-any-r1 toolchain-funcs versionator virtualx
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz
 	test? ( https://commondatastorage.googleapis.com/chromium-browser-official/${P}-testdata.tar.xz )"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~x86"
-IUSE="aura bindist cups gnome gnome-keyring kerberos neon pulseaudio selinux system-sqlite +tcmalloc"
+KEYWORDS="amd64 ~arm x86"
+IUSE="bindist cups gnome gnome-keyring gps kerberos neon pulseaudio selinux system-sqlite tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
@@ -46,10 +46,11 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	dev-libs/libxslt:=
 	dev-libs/nspr:=
 	>=dev-libs/nss-3.14.3:=
-	>=dev-libs/protobuf-2.5.0:=
+	dev-libs/protobuf:=
 	dev-libs/re2:=
 	gnome? ( >=gnome-base/gconf-2.24.0:= )
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
+	gps? ( >=sci-geosciences/gpsd-3.7:=[shm] )
 	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/flac:=
 	media-libs/harfbuzz:=[icu(+)]
@@ -60,7 +61,6 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	pulseaudio? ( media-sound/pulseaudio:= )
 	sys-apps/dbus:=
 	sys-apps/pciutils:=
-	>=sys-libs/libcap-2.22:=
 	sys-libs/zlib:=[minizip]
 	virtual/udev
 	x11-libs/gtk+:2=
@@ -90,40 +90,14 @@ DEPEND="${RDEPEND}
 		dev-libs/openssl:0
 		dev-python/pyftpdlib
 	)"
-# For nvidia-drivers blocker, see bug #413637 .
 RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
-	virtual/ttf-fonts
-	tcmalloc? ( !<x11-drivers/nvidia-drivers-331.20 )"
+	virtual/ttf-fonts"
 
 if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
 	EBUILD_DEATH_HOOKS+=" chromium_pkg_die";
 fi
-
-DISABLE_AUTOFORMATTING="yes"
-DOC_CONTENTS="
-Some web pages may require additional fonts to display properly.
-Try installing some of the following packages if some characters
-are not displayed properly:
-- media-fonts/arphicfonts
-- media-fonts/bitstream-cyberbit
-- media-fonts/droid
-- media-fonts/ipamonafont
-- media-fonts/ja-ipafonts
-- media-fonts/takao-fonts
-- media-fonts/wqy-microhei
-- media-fonts/wqy-zenhei
-
-Depending on your desktop environment, you may need
-to install additional packages to get icons on the Downloads page.
-
-For KDE, the required package is kde-base/oxygen-icons.
-
-For other desktop environments, try one of the following:
-- x11-themes/gnome-icon-theme
-- x11-themes/tango-icon-theme
-"
 
 pkg_setup() {
 	if [[ "${SLOT}" == "0" ]]; then
@@ -154,8 +128,10 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
-	epatch "${FILESDIR}/${PN}-system-jinja-r2.patch"
-	epatch "${FILESDIR}/${PN}-build_ffmpeg-r0.patch"
+	epatch "${FILESDIR}/${PN}-chromedriver-r0.patch"
+	epatch "${FILESDIR}/${PN}-gpsd-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-icu-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-jinja-r0.patch"
 
 	epatch_user
 
@@ -202,7 +178,6 @@ src_prepare() {
 		'third_party/mt19937ar' \
 		'third_party/npapi' \
 		'third_party/ots' \
-		'third_party/polymer' \
 		'third_party/pywebsocket' \
 		'third_party/qcms' \
 		'third_party/sfntly' \
@@ -230,6 +205,10 @@ src_configure() {
 	# Never tell the build system to "enable" SSE2, it has a few unexpected
 	# additions, bug #336871.
 	myconf+=" -Ddisable_sse2=1"
+
+	# Optional tcmalloc. Note it causes problems with e.g. NVIDIA
+	# drivers, bug #413637.
+	myconf+=" $(gyp_use tcmalloc linux_use_tcmalloc)"
 
 	# Disable nacl, we can't build without pnacl (http://crbug.com/269560).
 	myconf+=" -Ddisable_nacl=1"
@@ -287,14 +266,14 @@ src_configure() {
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
 	myconf+="
-		$(gyp_use aura)
 		$(gyp_use cups)
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
+		$(gyp_use gps linux_use_libgps)
+		$(gyp_use gps linux_link_libgps)
 		$(gyp_use kerberos)
-		$(gyp_use pulseaudio)
-		$(gyp_use tcmalloc linux_use_tcmalloc)"
+		$(gyp_use pulseaudio)"
 
 	if use system-sqlite; then
 		elog "Enabling system sqlite. WebSQL - http://www.w3.org/TR/webdatabase/"
@@ -350,14 +329,10 @@ src_configure() {
 
 	local myarch="$(tc-arch)"
 	if [[ $myarch = amd64 ]] ; then
-		target_arch=x64
-		ffmpeg_target_arch=x64
+		myconf+=" -Dtarget_arch=x64"
 	elif [[ $myarch = x86 ]] ; then
-		target_arch=ia32
-		ffmpeg_target_arch=ia32
+		myconf+=" -Dtarget_arch=ia32"
 	elif [[ $myarch = arm ]] ; then
-		target_arch=arm
-		ffmpeg_target_arch=$(usex neon arm-neon arm)
 		# TODO: re-enable NaCl (NativeClient).
 		local CTARGET=${CTARGET:-${CHOST}}
 		if [[ $(tc-is-softfloat) == "no" ]]; then
@@ -372,14 +347,19 @@ src_configure() {
 		else
 			myconf+=" -Darmv7=0"
 		fi
-		myconf+=" -Dsysroot=
+		myconf+=" -Dtarget_arch=arm
+			-Dsysroot=
 			$(gyp_use neon arm_neon)
 			-Ddisable_nacl=1"
 	else
 		die "Failed to determine target arch, got '$myarch'."
 	fi
 
-	myconf+=" -Dtarget_arch=${target_arch}"
+	if host-is-pax; then
+		# Prevent the build from failing (bug #301880, bug #487144). The performance
+		# difference is very small.
+		myconf+=" -Dv8_use_snapshot=0"
+	fi
 
 	# Make sure that -Werror doesn't get added to CFLAGS by the build system.
 	# Depending on GCC version the warnings are different and we don't want
@@ -406,18 +386,6 @@ src_configure() {
 	export CXX_host=$(tc-getBUILD_CXX)
 	export LD_host=${CXX_host}
 
-	# Bug 491582.
-	export TMPDIR="${WORKDIR}/temp"
-	mkdir -m 755 "${TMPDIR}" || die
-
-	# Re-configure bundled ffmpeg. See bug #491378 for example reasons.
-	einfo "Configuring bundled ffmpeg..."
-	pushd third_party/ffmpeg > /dev/null || die
-	chromium/scripts/build_ffmpeg.sh linux ${ffmpeg_target_arch} "${PWD}" config-only || die
-	chromium/scripts/copy_config.sh || die
-	popd > /dev/null || die
-
-	einfo "Configuring Chromium..."
 	build/linux/unbundle/replace_gyp_files.py ${myconf} || die
 	egyp_chromium ${myconf} || die
 }
@@ -434,10 +402,6 @@ src_compile() {
 	if use test; then
 		ninja_targets+=" $test_targets"
 	fi
-
-	# Build mksnapshot and pax-mark it.
-	ninja -C out/Release -v -j $(makeopts_jobs) mksnapshot.${target_arch} || die
-	pax-mark m out/Release/mksnapshot.${target_arch}
 
 	# Even though ninja autodetects number of CPUs, we respect
 	# user's options, for debugging with -j 1 or any other reason.
@@ -610,12 +574,4 @@ src_install() {
 				"${ED}"/usr/share/gnome-control-center/default-apps/chromium-browser${CHROMIUM_SUFFIX}.xml
 		fi
 	fi
-
-	readme.gentoo_create_doc
-}
-
-pkg_postinst() {
-	fdo-mime_desktop_database_update
-	gnome2_icon_cache_update
-	readme.gentoo_print_elog
 }
