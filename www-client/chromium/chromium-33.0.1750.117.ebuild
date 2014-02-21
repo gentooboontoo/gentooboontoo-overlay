@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-34.0.1825.4.ebuild,v 1.1 2014/02/08 04:15:02 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-33.0.1750.117.ebuild,v 1.1 2014/02/21 03:56:26 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -14,7 +14,7 @@ inherit chromium eutils flag-o-matic multilib multiprocessing pax-utils \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz
 	test? ( https://commondatastorage.googleapis.com/chromium-browser-official/${P}-testdata.tar.xz )"
 
 LICENSE="BSD"
@@ -38,6 +38,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	)
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
+	>=dev-libs/icu-49.1.1-r1:=
 	>=dev-libs/jsoncpp-0.5.0-r1:=
 	>=dev-libs/libevent-1.4.13:=
 	dev-libs/libxml2:=[icu]
@@ -164,9 +165,9 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
-	epatch "${FILESDIR}/${PN}-system-jinja-r3.patch"
-	epatch "${FILESDIR}/${PN}-gn-r1.patch"
-	epatch "${FILESDIR}/${PN}-depot-tools-r0.patch"
+	epatch "${FILESDIR}/${PN}-system-jinja-r2.patch"
+	epatch "${FILESDIR}/${PN}-build_ffmpeg-r0.patch"
+	epatch "${FILESDIR}/${PN}-gn-r0.patch"
 
 	epatch_user
 
@@ -187,7 +188,6 @@ src_prepare() {
 		'net/third_party/nss' \
 		'third_party/WebKit' \
 		'third_party/angle' \
-		'third_party/brotli' \
 		'third_party/cacheinvalidation' \
 		'third_party/cld' \
 		'third_party/cros_system_api' \
@@ -195,7 +195,6 @@ src_prepare() {
 		'third_party/flot' \
 		'third_party/hunspell' \
 		'third_party/iccjpeg' \
-		'third_party/icu' \
 		'third_party/jstemplate' \
 		'third_party/khronos' \
 		'third_party/leveldatabase' \
@@ -213,7 +212,6 @@ src_prepare() {
 		'third_party/modp_b64' \
 		'third_party/mt19937ar' \
 		'third_party/npapi' \
-		'third_party/nss.isolate' \
 		'third_party/ots' \
 		'third_party/polymer' \
 		'third_party/pywebsocket' \
@@ -264,7 +262,6 @@ src_configure() {
 
 	# Use system-provided libraries.
 	# TODO: use_system_hunspell (upstream changes needed).
-	# TODO: use_system_icu (resolve startup crash).
 	# TODO: use_system_libsrtp (bug #459932).
 	# TODO: use_system_libusb (http://crbug.com/266149).
 	# TODO: use_system_ssl (http://crbug.com/58087).
@@ -273,6 +270,7 @@ src_configure() {
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
 		-Duse_system_harfbuzz=1
+		-Duse_system_icu=1
 		-Duse_system_jsoncpp=1
 		-Duse_system_libevent=1
 		-Duse_system_libjpeg=1
@@ -534,7 +532,6 @@ chromium_test() {
 		"NetUtilTest.IDNToUnicode*" # bug 361885
 		"NetUtilTest.FormatUrl*" # see above
 		"SpdyFramerTests/SpdyFramerTest.CreatePushPromiseCompressed/2" # bug #478168
-		"HostResolverImplTest.BypassCache" # bug #498304
 		"HostResolverImplTest.FlushCacheOnIPAddressChange" # bug #481812
 		"HostResolverImplTest.ResolveFromCache" # see above
 		"ProxyResolverV8TracingTest.*" # see above
@@ -593,7 +590,6 @@ src_install() {
 	popd
 
 	insinto "${CHROMIUM_HOME}"
-	doins out/Release/icudtl.dat || die
 	doins out/Release/*.pak || die
 
 	doins -r out/Release/locales || die
