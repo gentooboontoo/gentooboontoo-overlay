@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-35.0.1897.2.ebuild,v 1.1 2014/03/19 06:59:20 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-36.0.1951.5.ebuild,v 1.2 2014/04/28 01:07:00 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -20,7 +20,7 @@ SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="+aura bindist cups gnome gnome-keyring kerberos neon pulseaudio selinux +tcmalloc"
+IUSE="bindist cups gnome gnome-keyring kerberos neon pulseaudio selinux +tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
@@ -50,6 +50,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/flac:=
 	media-libs/harfbuzz:=[icu(+)]
+	media-libs/libexif:=
 	>=media-libs/libjpeg-turbo-1.2.0-r1:=
 	media-libs/libpng:0=
 	>=media-libs/libwebp-0.4.0:=
@@ -157,7 +158,6 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
-	epatch "${FILESDIR}/${PN}-arm-r0.patch"
 	epatch "${FILESDIR}/${PN}-system-zlib-r0.patch"
 
 	epatch_user
@@ -175,6 +175,7 @@ src_prepare() {
 		'base/third_party/xdg_user_dirs' \
 		'breakpad/src/third_party/curl' \
 		'chrome/third_party/mozilla_security_manager' \
+		'courgette/third_party' \
 		'crypto/third_party/nss' \
 		'net/third_party/mozilla_security_manager' \
 		'net/third_party/nss' \
@@ -184,6 +185,7 @@ src_prepare() {
 		'third_party/cacheinvalidation' \
 		'third_party/cld' \
 		'third_party/cros_system_api' \
+		'third_party/dom_distiller_js' \
 		'third_party/ffmpeg' \
 		'third_party/flot' \
 		'third_party/hunspell' \
@@ -210,7 +212,6 @@ src_prepare() {
 		'third_party/modp_b64' \
 		'third_party/mt19937ar' \
 		'third_party/npapi' \
-		'third_party/nss.isolate' \
 		'third_party/opus' \
 		'third_party/ots' \
 		'third_party/polymer' \
@@ -301,7 +302,6 @@ src_configure() {
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
 	myconf+="
-		$(gyp_use aura)
 		$(gyp_use cups)
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
@@ -328,8 +328,12 @@ src_configure() {
 
 	# Never use bundled gold binary. Disable gold linker flags for now.
 	myconf+="
-		-Dlinux_use_gold_binary=0
+		-Dlinux_use_bundled_binutils=0
+		-Dlinux_use_bundled_gold=0
 		-Dlinux_use_gold_flags=0"
+
+	# TODO: enable mojo after fixing compile failures.
+	myconf+=" -Duse_mojo=0"
 
 	# Always support proprietary codecs.
 	myconf+=" -Dproprietary_codecs=1"
@@ -390,6 +394,9 @@ src_configure() {
 	# Depending on GCC version the warnings are different and we don't want
 	# the build to fail because of that.
 	myconf+=" -Dwerror="
+
+	# Disable fatal linker warnings, bug 506268.
+	myconf+=" -Ddisable_fatal_linker_warnings=1"
 
 	# Avoid CFLAGS problems, bug #352457, bug #390147.
 	if ! use custom-cflags; then
