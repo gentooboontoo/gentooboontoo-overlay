@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-36.0.1985.8.ebuild,v 1.1 2014/05/17 10:49:29 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-37.0.2024.2.ebuild,v 1.1 2014/06/04 07:16:59 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -14,8 +14,7 @@ inherit chromium eutils flag-o-matic multilib multiprocessing pax-utils \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz
-	test? ( https://commondatastorage.googleapis.com/chromium-browser-official/${P}-testdata.tar.xz )"
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz"
 
 LICENSE="BSD"
 SLOT="0"
@@ -62,6 +61,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	>=sys-libs/libcap-2.22:=
 	sys-libs/zlib:=[minizip]
 	virtual/udev
+	x11-libs/libdrm
 	x11-libs/gtk+:2=
 	>=x11-libs/libXi-1.6.0:=
 	x11-libs/libXinerama:=
@@ -80,13 +80,11 @@ DEPEND="${RDEPEND}
 	sys-apps/hwids
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
-	virtual/pkgconfig
-	test? (
-		dev-libs/openssl:0
-	)"
+	virtual/pkgconfig"
 # For nvidia-drivers blocker, see bug #413637 .
 RDEPEND+="
 	!=www-client/chromium-9999
+	!<www-plugins/chrome-binary-plugins-37
 	x11-misc/xdg-utils
 	virtual/ttf-fonts
 	tcmalloc? ( !<x11-drivers/nvidia-drivers-331.20 )"
@@ -95,11 +93,9 @@ RDEPEND+="
 # with python_check_deps.
 DEPEND+=" $(python_gen_any_dep '
 	dev-python/simplejson[${PYTHON_USEDEP}]
-	test? ( dev-python/pyftpdlib[${PYTHON_USEDEP}] )
 ')"
 python_check_deps() {
-	has_version "dev-python/simplejson[${PYTHON_USEDEP}]" && \
-		{ ! use test || has_version "dev-python/pyftpdlib[${PYTHON_USEDEP}]"; }
+	has_version "dev-python/simplejson[${PYTHON_USEDEP}]"
 }
 
 if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
@@ -159,6 +155,9 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
+	epatch "${FILESDIR}/${PN}-system-harfbuzz-r0.patch"
+	epatch "${FILESDIR}/${PN}-angle-r0.patch"
+
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
@@ -213,6 +212,7 @@ src_prepare() {
 		'third_party/npapi' \
 		'third_party/opus' \
 		'third_party/ots' \
+		'third_party/pdfium' \
 		'third_party/polymer' \
 		'third_party/ply' \
 		'third_party/protobuf' \
@@ -427,7 +427,7 @@ src_configure() {
 	# Re-configure bundled ffmpeg. See bug #491378 for example reasons.
 	einfo "Configuring bundled ffmpeg..."
 	pushd third_party/ffmpeg > /dev/null || die
-	chromium/scripts/build_ffmpeg.sh linux ${ffmpeg_target_arch} "${PWD}" config-only || die
+	chromium/scripts/build_ffmpeg.py --config-only linux ${ffmpeg_target_arch} || die
 	chromium/scripts/copy_config.sh || die
 	popd > /dev/null || die
 
@@ -454,112 +454,17 @@ eninja() {
 }
 
 src_compile() {
-	# TODO: add media_unittests after fixing compile (bug #462546).
-	local test_targets=""
-	for x in base cacheinvalidation content crypto \
-		gpu net printing sql; do
-		test_targets+=" ${x}_unittests"
-	done
-
 	local ninja_targets="chrome chrome_sandbox chromedriver"
-	if use test; then
-		ninja_targets+=" $test_targets"
-	fi
 
 	# Build mksnapshot and pax-mark it.
-	eninja -C out/Release mksnapshot.${target_arch} || die
-	pax-mark m out/Release/mksnapshot.${target_arch}
+	eninja -C out/Release mksnapshot || die
+	pax-mark m out/Release/mksnapshot
 
 	# Even though ninja autodetects number of CPUs, we respect
 	# user's options, for debugging with -j 1 or any other reason.
 	eninja -C out/Release ${ninja_targets} || die
 
 	pax-mark m out/Release/chrome
-	if use test; then
-		for x in $test_targets; do
-			pax-mark m out/Release/${x}
-		done
-	fi
-}
-
-src_test() {
-	# For more info see bug #350349.
-	local LC_ALL="en_US.utf8"
-
-	if ! locale -a | grep -q "${LC_ALL}"; then
-		eerror "${PN} requires ${LC_ALL} locale for tests"
-		eerror "Please read the following guides for more information:"
-		eerror "  http://www.gentoo.org/doc/en/guide-localization.xml"
-		eerror "  http://www.gentoo.org/doc/en/utf-8.xml"
-		die "locale ${LC_ALL} is not supported"
-	fi
-
-	# If we have the right locale, export it to the environment
-	export LC_ALL
-
-	# For more info see bug #370957.
-	if [[ $UID -eq 0 ]]; then
-		die "Tests must be run as non-root. Please use FEATURES=userpriv."
-	fi
-
-	# virtualmake dies on failure, so we run our tests in a function
-	VIRTUALX_COMMAND="chromium_test" virtualmake
-}
-
-chromium_test() {
-	# Keep track of the cumulative exit status for all tests
-	local exitstatus=0
-
-	runtest() {
-		local cmd=$1
-		shift
-		local IFS=:
-		set -- "${cmd}" --test-launcher-bot-mode "--gtest_filter=-$*"
-		einfo "$@"
-		"$@"
-		local st=$?
-		(( st )) && eerror "${cmd} failed"
-		(( exitstatus |= st ))
-	}
-
-	local excluded_base_unittests=(
-		"OutOfMemoryDeathTest.ViaSharedLibraries" # bug #497512
-	)
-	runtest out/Release/base_unittests "${excluded_base_unittests[@]}"
-	runtest out/Release/cacheinvalidation_unittests
-
-	local excluded_content_unittests=(
-		"RendererDateTimePickerTest.*" # bug #465452
-	)
-	runtest out/Release/content_unittests "${excluded_content_unittests[@]}"
-
-	runtest out/Release/crypto_unittests
-	runtest out/Release/gpu_unittests
-
-	# TODO: add media_unittests after fixing compile (bug #462546).
-	# runtest out/Release/media_unittests
-
-	local excluded_net_unittests=(
-		"NetUtilTest.IDNToUnicode*" # bug 361885
-		"NetUtilTest.FormatUrl*" # see above
-		"SpdyFramerTests/SpdyFramerTest.CreatePushPromiseCompressed/2" # bug #478168
-		"SpdyFramerTests/SpdyFramerTest.CreateContinuationCompressed/2" # see above
-		"HostResolverImplTest.BypassCache" # bug #498304
-		"HostResolverImplTest.FlushCacheOnIPAddressChange" # bug #481812
-		"HostResolverImplTest.ResolveFromCache" # see above
-		"ProxyResolverV8TracingTest.*" # see above
-		"SSLClientSocketTest.ConnectMismatched" # see above
-		"UDPSocketTest.*" # see above
-		"*EndToEndTest*" # see above
-		"Version/QuicHttpStreamTest.Priority/0" # bug #503010
-		"Version/QuicHttpStreamTest.DestroyedEarly/0" # see above
-	)
-	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
-
-	runtest out/Release/printing_unittests
-	runtest out/Release/sql_unittests
-
-	return ${exitstatus}
 }
 
 src_install() {
@@ -616,6 +521,7 @@ src_install() {
 	newman out/Release/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
 
 	doexe out/Release/libffmpegsumo.so || die
+	doexe out/Release/libpdf.so || die
 
 	# Install icons and desktop entry.
 	local branding size
