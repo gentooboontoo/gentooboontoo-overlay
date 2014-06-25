@@ -1,6 +1,60 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2014 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.1087 2014/06/04 07:16:59 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.1098 2014/06/25 03:35:36 phajdan.jr Exp $
+
+*chromium-37.0.2062.0 (25 Jun 2014)
+
+  25 Jun 2014; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-37.0.2062.0.ebuild, +files/chromium-ffmpeg-r2.patch,
+  -chromium-37.0.2041.4.ebuild:
+  Dev channel bump. Remove old.
+
+*chromium-37.0.2054.3 (18 Jun 2014)
+
+  18 Jun 2014; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-37.0.2054.3.ebuild, -chromium-37.0.2024.2.ebuild:
+  Dev channel bump. Remove old.
+
+*chromium-36.0.1985.67 (14 Jun 2014)
+
+  14 Jun 2014; Mike Gilbert <floppym@gentoo.org> +chromium-36.0.1985.67.ebuild,
+  -chromium-36.0.1985.32.ebuild:
+  Version bump.
+
+  14 Jun 2014; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  files/chromium-ffmpeg-r1.patch:
+  Fix build on amd64, reported as part of bug #513048 by mgorny and floppym.
+
+  12 Jun 2014; Mike Gilbert <floppym@gentoo.org>
+  -chromium-35.0.1916.114-r1.ebuild:
+  Remove old.
+
+  12 Jun 2014; Agostino Sarubbo <ago@gentoo.org> chromium-35.0.1916.153.ebuild:
+  Stable for x86, wrt bug #512944
+
+  12 Jun 2014; Agostino Sarubbo <ago@gentoo.org> chromium-35.0.1916.153.ebuild:
+  Stable for amd64, wrt bug #512944
+
+*chromium-37.0.2041.4 (12 Jun 2014)
+
+  12 Jun 2014; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  +chromium-37.0.2041.4.ebuild, +files/chromium-ffmpeg-r1.patch,
+  -chromium-37.0.2017.2.ebuild, metadata.xml:
+  Dev channel bump. Add pic USE flag to build libffmpegsumo.so without text
+  relocations on x86 (bug #493670 by ago). Remove old.
+
+*chromium-35.0.1916.153 (12 Jun 2014)
+
+  12 Jun 2014; Mike Gilbert <floppym@gentoo.org> +chromium-35.0.1916.153.ebuild:
+  Stable channel bump.
+
+  09 Jun 2014; Mike Gilbert <floppym@gentoo.org> -chromium-36.0.1985.18.ebuild:
+  Remove old.
+
+*chromium-36.0.1985.49 (09 Jun 2014)
+
+  09 Jun 2014; Mike Gilbert <floppym@gentoo.org> +chromium-36.0.1985.49.ebuild:
+  Beta channel bump.
 
 *chromium-37.0.2024.2 (04 Jun 2014)
 

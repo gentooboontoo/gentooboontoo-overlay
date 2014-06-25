@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-37.0.2017.2.ebuild,v 1.1 2014/05/30 07:21:20 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-36.0.1985.67.ebuild,v 1.1 2014/06/14 17:46:31 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -88,7 +88,6 @@ DEPEND="${RDEPEND}
 # For nvidia-drivers blocker, see bug #413637 .
 RDEPEND+="
 	!=www-client/chromium-9999
-	!<www-plugins/chrome-binary-plugins-37
 	x11-misc/xdg-utils
 	virtual/ttf-fonts
 	tcmalloc? ( !<x11-drivers/nvidia-drivers-331.20 )"
@@ -161,7 +160,7 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
-	epatch "${FILESDIR}/${PN}-system-harfbuzz-r0.patch"
+	epatch "${FILESDIR}/${PN}-ffmpeg-r0.patch"
 
 	epatch_user
 
@@ -217,7 +216,6 @@ src_prepare() {
 		'third_party/npapi' \
 		'third_party/opus' \
 		'third_party/ots' \
-		'third_party/pdfium' \
 		'third_party/polymer' \
 		'third_party/ply' \
 		'third_party/protobuf' \
@@ -432,7 +430,7 @@ src_configure() {
 	# Re-configure bundled ffmpeg. See bug #491378 for example reasons.
 	einfo "Configuring bundled ffmpeg..."
 	pushd third_party/ffmpeg > /dev/null || die
-	chromium/scripts/build_ffmpeg.py --config-only linux ${ffmpeg_target_arch} || die
+	chromium/scripts/build_ffmpeg.sh linux ${ffmpeg_target_arch} "${PWD}" config-only || die
 	chromium/scripts/copy_config.sh || die
 	popd > /dev/null || die
 
@@ -472,8 +470,8 @@ src_compile() {
 	fi
 
 	# Build mksnapshot and pax-mark it.
-	eninja -C out/Release mksnapshot || die
-	pax-mark m out/Release/mksnapshot
+	eninja -C out/Release mksnapshot.${target_arch} || die
+	pax-mark m out/Release/mksnapshot.${target_arch}
 
 	# Even though ninja autodetects number of CPUs, we respect
 	# user's options, for debugging with -j 1 or any other reason.
@@ -621,7 +619,6 @@ src_install() {
 	newman out/Release/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
 
 	doexe out/Release/libffmpegsumo.so || die
-	doexe out/Release/libpdf.so || die
 
 	# Install icons and desktop entry.
 	local branding size
