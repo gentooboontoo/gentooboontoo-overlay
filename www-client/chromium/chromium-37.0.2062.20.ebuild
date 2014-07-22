@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-35.0.1916.153.ebuild,v 1.3 2014/06/12 12:44:41 ago Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-37.0.2062.20.ebuild,v 1.2 2014/07/19 08:56:48 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -14,13 +14,12 @@ inherit chromium eutils flag-o-matic multilib multiprocessing pax-utils \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz
-	test? ( https://commondatastorage.googleapis.com/chromium-browser-official/${P}-testdata.tar.xz )"
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="amd64 ~arm x86"
-IUSE="bindist cups gnome gnome-keyring kerberos neon pulseaudio selinux +tcmalloc"
+KEYWORDS="~amd64 ~arm ~x86"
+IUSE="bindist cups gnome gnome-keyring kerberos neon pic pulseaudio selinux +tcmalloc"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
@@ -38,6 +37,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	)
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
+	dev-libs/glib:=
 	dev-libs/icu:=
 	>=dev-libs/jsoncpp-0.5.0-r1:=
 	>=dev-libs/libevent-1.4.13:=
@@ -47,10 +47,13 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	>=dev-libs/nss-3.14.3:=
 	dev-libs/re2:=
 	gnome? ( >=gnome-base/gconf-2.24.0:= )
-	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
+	gnome-keyring? ( gnome-base/libgnome-keyring:= )
 	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/flac:=
+	media-libs/fontconfig:=
+	media-libs/freetype:=
 	media-libs/harfbuzz:=[icu(+)]
+	media-libs/libexif:=
 	>=media-libs/libjpeg-turbo-1.2.0-r1:=
 	media-libs/libpng:0=
 	>=media-libs/libwebp-0.4.0:=
@@ -61,12 +64,23 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	>=sys-libs/libcap-2.22:=
 	sys-libs/zlib:=[minizip]
 	virtual/udev
-	x11-libs/libdrm
+	x11-libs/cairo:=
+	x11-libs/gdk-pixbuf:=
 	x11-libs/gtk+:2=
+	x11-libs/libdrm
+	x11-libs/libX11:=
+	x11-libs/libXcomposite:=
+	x11-libs/libXcursor:=
+	x11-libs/libXdamage:=
+	x11-libs/libXext:=
+	x11-libs/libXfixes:=
 	>=x11-libs/libXi-1.6.0:=
 	x11-libs/libXinerama:=
+	x11-libs/libXrandr:=
+	x11-libs/libXrender:=
 	x11-libs/libXScrnSaver:=
 	x11-libs/libXtst:=
+	x11-libs/pango:=
 	kerberos? ( virtual/krb5 )
 	selinux? ( sec-policy/selinux-chromium )"
 DEPEND="${RDEPEND}
@@ -77,16 +91,14 @@ DEPEND="${RDEPEND}
 	dev-perl/JSON
 	>=dev-util/gperf-3.0.3
 	dev-util/ninja
-	sys-apps/hwids
+	sys-apps/hwids[usb(+)]
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
-	virtual/pkgconfig
-	test? (
-		dev-libs/openssl:0
-	)"
+	virtual/pkgconfig"
 # For nvidia-drivers blocker, see bug #413637 .
 RDEPEND+="
 	!=www-client/chromium-9999
+	!<www-plugins/chrome-binary-plugins-37
 	x11-misc/xdg-utils
 	virtual/ttf-fonts
 	tcmalloc? ( !<x11-drivers/nvidia-drivers-331.20 )"
@@ -95,11 +107,9 @@ RDEPEND+="
 # with python_check_deps.
 DEPEND+=" $(python_gen_any_dep '
 	dev-python/simplejson[${PYTHON_USEDEP}]
-	test? ( dev-python/pyftpdlib[${PYTHON_USEDEP}] )
 ')"
 python_check_deps() {
-	has_version "dev-python/simplejson[${PYTHON_USEDEP}]" && \
-		{ ! use test || has_version "dev-python/pyftpdlib[${PYTHON_USEDEP}]"; }
+	has_version "dev-python/simplejson[${PYTHON_USEDEP}]"
 }
 
 if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
@@ -159,7 +169,8 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
-	epatch "${FILESDIR}/${PN}-system-zlib-r0.patch"
+	epatch "${FILESDIR}/${PN}-angle-r0.patch"
+	epatch "${FILESDIR}/${PN}-ffmpeg-r2.patch"
 
 	epatch_user
 
@@ -176,6 +187,7 @@ src_prepare() {
 		'base/third_party/xdg_user_dirs' \
 		'breakpad/src/third_party/curl' \
 		'chrome/third_party/mozilla_security_manager' \
+		'courgette/third_party' \
 		'crypto/third_party/nss' \
 		'net/third_party/mozilla_security_manager' \
 		'net/third_party/nss' \
@@ -187,6 +199,7 @@ src_prepare() {
 		'third_party/cros_system_api' \
 		'third_party/dom_distiller_js' \
 		'third_party/ffmpeg' \
+		'third_party/fips181' \
 		'third_party/flot' \
 		'third_party/hunspell' \
 		'third_party/iccjpeg' \
@@ -212,9 +225,9 @@ src_prepare() {
 		'third_party/modp_b64' \
 		'third_party/mt19937ar' \
 		'third_party/npapi' \
-		'third_party/nss.isolate' \
 		'third_party/opus' \
 		'third_party/ots' \
+		'third_party/pdfium' \
 		'third_party/polymer' \
 		'third_party/ply' \
 		'third_party/protobuf' \
@@ -312,7 +325,7 @@ src_configure() {
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
 		$(gyp_use kerberos)
 		$(gyp_use pulseaudio)
-		$(gyp_use tcmalloc linux_use_tcmalloc)"
+		$(gyp_use tcmalloc use_allocator tcmalloc none)"
 
 	# Use explicit library dependencies instead of dlopen.
 	# This makes breakages easier to detect by revdep-rebuild.
@@ -332,11 +345,9 @@ src_configure() {
 
 	# Never use bundled gold binary. Disable gold linker flags for now.
 	myconf+="
-		-Dlinux_use_gold_binary=0
+		-Dlinux_use_bundled_binutils=0
+		-Dlinux_use_bundled_gold=0
 		-Dlinux_use_gold_flags=0"
-
-	# TODO: enable mojo after fixing compile failures.
-	myconf+=" -Duse_mojo=0"
 
 	# Always support proprietary codecs.
 	myconf+=" -Dproprietary_codecs=1"
@@ -425,12 +436,20 @@ src_configure() {
 	export TMPDIR="${WORKDIR}/temp"
 	mkdir -m 755 "${TMPDIR}" || die
 
+	local build_ffmpeg_args=""
+	if use pic && [[ "${ffmpeg_target_arch}" == "ia32" ]]; then
+		build_ffmpeg_args+=" --disable-asm"
+	fi
+
 	# Re-configure bundled ffmpeg. See bug #491378 for example reasons.
 	einfo "Configuring bundled ffmpeg..."
 	pushd third_party/ffmpeg > /dev/null || die
-	chromium/scripts/build_ffmpeg.sh linux ${ffmpeg_target_arch} "${PWD}" config-only || die
+	chromium/scripts/build_ffmpeg.py linux ${ffmpeg_target_arch} -- ${build_ffmpeg_args} || die
 	chromium/scripts/copy_config.sh || die
+	chromium/scripts/generate_gyp.py || die
 	popd > /dev/null || die
+
+	third_party/libaddressinput/chromium/tools/update-strings.py || die
 
 	einfo "Configuring Chromium..."
 	build/linux/unbundle/replace_gyp_files.py ${myconf} || die
@@ -455,112 +474,17 @@ eninja() {
 }
 
 src_compile() {
-	# TODO: add media_unittests after fixing compile (bug #462546).
-	local test_targets=""
-	for x in base cacheinvalidation content crypto \
-		gpu net printing sql; do
-		test_targets+=" ${x}_unittests"
-	done
-
 	local ninja_targets="chrome chrome_sandbox chromedriver"
-	if use test; then
-		ninja_targets+=" $test_targets"
-	fi
 
 	# Build mksnapshot and pax-mark it.
-	eninja -C out/Release mksnapshot.${target_arch} || die
-	pax-mark m out/Release/mksnapshot.${target_arch}
+	eninja -C out/Release mksnapshot || die
+	pax-mark m out/Release/mksnapshot
 
 	# Even though ninja autodetects number of CPUs, we respect
 	# user's options, for debugging with -j 1 or any other reason.
 	eninja -C out/Release ${ninja_targets} || die
 
 	pax-mark m out/Release/chrome
-	if use test; then
-		for x in $test_targets; do
-			pax-mark m out/Release/${x}
-		done
-	fi
-}
-
-src_test() {
-	# For more info see bug #350349.
-	local LC_ALL="en_US.utf8"
-
-	if ! locale -a | grep -q "${LC_ALL}"; then
-		eerror "${PN} requires ${LC_ALL} locale for tests"
-		eerror "Please read the following guides for more information:"
-		eerror "  http://www.gentoo.org/doc/en/guide-localization.xml"
-		eerror "  http://www.gentoo.org/doc/en/utf-8.xml"
-		die "locale ${LC_ALL} is not supported"
-	fi
-
-	# If we have the right locale, export it to the environment
-	export LC_ALL
-
-	# For more info see bug #370957.
-	if [[ $UID -eq 0 ]]; then
-		die "Tests must be run as non-root. Please use FEATURES=userpriv."
-	fi
-
-	# virtualmake dies on failure, so we run our tests in a function
-	VIRTUALX_COMMAND="chromium_test" virtualmake
-}
-
-chromium_test() {
-	# Keep track of the cumulative exit status for all tests
-	local exitstatus=0
-
-	runtest() {
-		local cmd=$1
-		shift
-		local IFS=:
-		set -- "${cmd}" --test-launcher-bot-mode "--gtest_filter=-$*"
-		einfo "$@"
-		"$@"
-		local st=$?
-		(( st )) && eerror "${cmd} failed"
-		(( exitstatus |= st ))
-	}
-
-	local excluded_base_unittests=(
-		"OutOfMemoryDeathTest.ViaSharedLibraries" # bug #497512
-	)
-	runtest out/Release/base_unittests "${excluded_base_unittests[@]}"
-	runtest out/Release/cacheinvalidation_unittests
-
-	local excluded_content_unittests=(
-		"RendererDateTimePickerTest.*" # bug #465452
-	)
-	runtest out/Release/content_unittests "${excluded_content_unittests[@]}"
-
-	runtest out/Release/crypto_unittests
-	runtest out/Release/gpu_unittests
-
-	# TODO: add media_unittests after fixing compile (bug #462546).
-	# runtest out/Release/media_unittests
-
-	local excluded_net_unittests=(
-		"NetUtilTest.IDNToUnicode*" # bug 361885
-		"NetUtilTest.FormatUrl*" # see above
-		"SpdyFramerTests/SpdyFramerTest.CreatePushPromiseCompressed/2" # bug #478168
-		"SpdyFramerTests/SpdyFramerTest.CreateContinuationCompressed/2" # see above
-		"HostResolverImplTest.BypassCache" # bug #498304
-		"HostResolverImplTest.FlushCacheOnIPAddressChange" # bug #481812
-		"HostResolverImplTest.ResolveFromCache" # see above
-		"ProxyResolverV8TracingTest.*" # see above
-		"SSLClientSocketTest.ConnectMismatched" # see above
-		"UDPSocketTest.*" # see above
-		"*EndToEndTest*" # see above
-		"Version/QuicHttpStreamTest.Priority/0" # bug #503010
-		"Version/QuicHttpStreamTest.DestroyedEarly/0" # see above
-	)
-	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
-
-	runtest out/Release/printing_unittests
-	runtest out/Release/sql_unittests
-
-	return ${exitstatus}
 }
 
 src_install() {
@@ -617,6 +541,7 @@ src_install() {
 	newman out/Release/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
 
 	doexe out/Release/libffmpegsumo.so || die
+	doexe out/Release/libpdf.so || die
 
 	# Install icons and desktop entry.
 	local branding size
