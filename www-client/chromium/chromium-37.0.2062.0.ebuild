@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-37.0.2062.0.ebuild,v 1.1 2014/06/25 03:35:36 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-37.0.2062.0.ebuild,v 1.3 2014/07/11 18:34:02 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -46,7 +46,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	>=dev-libs/nss-3.14.3:=
 	dev-libs/re2:=
 	gnome? ( >=gnome-base/gconf-2.24.0:= )
-	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
+	gnome-keyring? ( gnome-base/libgnome-keyring:= )
 	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/flac:=
 	media-libs/harfbuzz:=[icu(+)]
@@ -77,7 +77,7 @@ DEPEND="${RDEPEND}
 	dev-perl/JSON
 	>=dev-util/gperf-3.0.3
 	dev-util/ninja
-	sys-apps/hwids
+	sys-apps/hwids[usb(+)]
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	virtual/pkgconfig"
