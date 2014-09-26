@@ -1,6 +1,46 @@
 # ChangeLog for www-client/chromium
 # Copyright 1999-2014 Gentoo Foundation; Distributed under the GPL v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.1130 2014/09/05 17:38:59 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/ChangeLog,v 1.1138 2014/09/26 05:30:17 phajdan.jr Exp $
+
+*chromium-39.0.2166.2 (26 Sep 2014)
+
+  26 Sep 2014; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-39.0.2145.4.ebuild, +chromium-39.0.2166.2.ebuild:
+  Dev channel bump. Use system protobuf. Remove old.
+
+*chromium-38.0.2125.66 (20 Sep 2014)
+
+  20 Sep 2014; Mike Gilbert <floppym@gentoo.org> +chromium-38.0.2125.66.ebuild,
+  -chromium-38.0.2125.44.ebuild:
+  Beta channel bump.
+
+*chromium-39.0.2159.4 (17 Sep 2014)
+
+  17 Sep 2014; Pawel Hajdan jr <phajdan.jr@gentoo.org>
+  -chromium-38.0.2125.24.ebuild, -chromium-39.0.2138.3.ebuild,
+  +chromium-39.0.2159.4.ebuild, +files/chromium-system-jinja-r7.patch:
+  Dev channel bump. Remove old.
+
+*chromium-38.0.2125.58 (17 Sep 2014)
+
+  17 Sep 2014; Mike Gilbert <floppym@gentoo.org> +chromium-38.0.2125.58.ebuild,
+  -chromium-38.0.2125.0.ebuild:
+  Beta channel bump.
+
+  14 Sep 2014; Agostino Sarubbo <ago@gentoo.org> -chromium-37.0.2062.94.ebuild:
+  Remove old
+
+  11 Sep 2014; Agostino Sarubbo <ago@gentoo.org> chromium-37.0.2062.120.ebuild:
+  Stable for x86, wrt bug #522484
+
+  10 Sep 2014; Richard Freeman <rich0@gentoo.org>
+  chromium-37.0.2062.120.ebuild:
+  amd64 stable - 522484
+
+*chromium-37.0.2062.120 (10 Sep 2014)
+
+  10 Sep 2014; Mike Gilbert <floppym@gentoo.org> +chromium-37.0.2062.120.ebuild:
+  Stable channel bump.
 
 *chromium-39.0.2145.4 (05 Sep 2014)
 
