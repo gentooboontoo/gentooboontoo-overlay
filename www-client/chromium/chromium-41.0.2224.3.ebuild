@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-38.0.2125.58.ebuild,v 1.1 2014/09/17 00:35:31 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-41.0.2224.3.ebuild,v 1.1 2014/11/21 17:19:17 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -14,12 +14,13 @@ inherit chromium eutils flag-o-matic multilib multiprocessing pax-utils \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz"
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz"
 
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
 IUSE="bindist cups gnome gnome-keyring kerberos neon pic pulseaudio selinux +tcmalloc"
+RESTRICT="!bindist? ( bindist )"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
@@ -81,8 +82,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	x11-libs/libXScrnSaver:=
 	x11-libs/libXtst:=
 	x11-libs/pango:=
-	kerberos? ( virtual/krb5 )
-	selinux? ( sec-policy/selinux-chromium )"
+	kerberos? ( virtual/krb5 )"
 DEPEND="${RDEPEND}
 	!arm? (
 		dev-lang/yasm
@@ -102,17 +102,20 @@ RDEPEND+="
 	x11-misc/xdg-utils
 	virtual/opengl
 	virtual/ttf-fonts
+	selinux? ( sec-policy/selinux-chromium )
 	tcmalloc? ( !<x11-drivers/nvidia-drivers-331.20 )"
 
 # Python dependencies. The DEPEND part needs to be kept in sync
 # with python_check_deps.
 DEPEND+=" $(python_gen_any_dep '
+	dev-python/beautifulsoup:python-2[${PYTHON_USEDEP}]
 	dev-python/jinja[${PYTHON_USEDEP}]
 	dev-python/ply[${PYTHON_USEDEP}]
 	dev-python/simplejson[${PYTHON_USEDEP}]
 ')"
 python_check_deps() {
-	has_version "dev-python/jinja[${PYTHON_USEDEP}]" && \
+	has_version "dev-python/beautifulsoup:python-2[${PYTHON_USEDEP}]" && \
+		has_version "dev-python/jinja[${PYTHON_USEDEP}]" && \
 		has_version "dev-python/ply[${PYTHON_USEDEP}]" && \
 		has_version "dev-python/simplejson[${PYTHON_USEDEP}]"
 }
@@ -174,8 +177,7 @@ src_prepare() {
 	#	touch out/Release/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	# fi
 
-	epatch "${FILESDIR}/${PN}-gcc-4.7-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-jinja-r6.patch"
+	epatch "${FILESDIR}/${PN}-system-jinja-r7.patch"
 
 	epatch_user
 
@@ -203,11 +205,15 @@ src_prepare() {
 		'third_party/cacheinvalidation' \
 		'third_party/cld_2' \
 		'third_party/cros_system_api' \
+		'third_party/cython/python_flags.py' \
 		'third_party/dom_distiller_js' \
 		'third_party/dom_distiller_js/package/proto_gen/third_party/dom_distiller_js' \
 		'third_party/ffmpeg' \
 		'third_party/fips181' \
 		'third_party/flot' \
+		'third_party/google_input_tools' \
+		'third_party/google_input_tools/third_party/closure_library' \
+		'third_party/google_input_tools/third_party/closure_library/third_party/closure' \
 		'third_party/hunspell' \
 		'third_party/iccjpeg' \
 		'third_party/jstemplate' \
@@ -230,6 +236,7 @@ src_prepare() {
 		'third_party/modp_b64' \
 		'third_party/mt19937ar' \
 		'third_party/npapi' \
+		'third_party/openmax_dl' \
 		'third_party/opus' \
 		'third_party/ots' \
 		'third_party/pdfium' \
@@ -248,11 +255,12 @@ src_prepare() {
 		'third_party/tcmalloc' \
 		'third_party/tlslite' \
 		'third_party/trace-viewer' \
+		'third_party/trace-viewer/third_party/components/polymer' \
+		'third_party/trace-viewer/third_party/d3' \
+		'third_party/trace-viewer/third_party/gl-matrix' \
 		'third_party/trace-viewer/third_party/jszip' \
 		'third_party/trace-viewer/third_party/tvcm' \
-		'third_party/trace-viewer/third_party/tvcm/third_party/d3' \
-		'third_party/trace-viewer/third_party/tvcm/third_party/gl-matrix' \
-		'third_party/trace-viewer/third_party/tvcm/third_party/polymer' \
+		'third_party/trace-viewer/third_party/tvcm/third_party/beautifulsoup/polymer_soup.py' \
 		'third_party/undoview' \
 		'third_party/usrsctp' \
 		'third_party/webdriver' \
@@ -261,9 +269,9 @@ src_prepare() {
 		'third_party/x86inc' \
 		'third_party/zlib/google' \
 		'url/third_party/mozilla' \
+		'v8/src/third_party/fdlibm' \
 		'v8/src/third_party/kernel' \
 		'v8/src/third_party/valgrind' \
-		'v8/third_party/fdlibm' \
 		--do-remove || die
 }
 
@@ -297,7 +305,7 @@ src_configure() {
 	# TODO: use_system_libvpx (http://crbug.com/347823).
 	# TODO: use_system_libusb (http://crbug.com/266149).
 	# TODO: use_system_opus (https://code.google.com/p/webrtc/issues/detail?id=3077).
-	# TODO: use_system_protobuf (bug #503084).
+	# TODO: use_system_protobuf (bug #525560).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 	myconf+="
