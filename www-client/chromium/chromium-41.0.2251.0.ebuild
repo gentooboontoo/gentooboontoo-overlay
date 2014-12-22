@@ -1,6 +1,6 @@
 # Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-40.0.2214.10.ebuild,v 1.1 2014/11/19 20:00:55 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-41.0.2251.0.ebuild,v 1.1 2014/12/20 15:40:37 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -223,6 +223,7 @@ src_prepare() {
 		'third_party/libjingle' \
 		'third_party/libphonenumber' \
 		'third_party/libsrtp' \
+		'third_party/libudev' \
 		'third_party/libusb' \
 		'third_party/libvpx' \
 		'third_party/libvpx/source/libvpx/third_party/x86inc' \
@@ -240,6 +241,7 @@ src_prepare() {
 		'third_party/opus' \
 		'third_party/ots' \
 		'third_party/pdfium' \
+		'third_party/pdfium/third_party/bigint' \
 		'third_party/pdfium/third_party/logging.h' \
 		'third_party/pdfium/third_party/macros.h' \
 		'third_party/pdfium/third_party/numerics' \
@@ -553,6 +555,7 @@ src_install() {
 	popd
 
 	insinto "${CHROMIUM_HOME}"
+	doins out/Release/*.bin || die
 	doins out/Release/*.pak || die
 
 	doins -r out/Release/locales || die
