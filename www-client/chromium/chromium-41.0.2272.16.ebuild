@@ -1,6 +1,6 @@
-# Copyright 1999-2014 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-41.0.2251.0.ebuild,v 1.1 2014/12/20 15:40:37 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-41.0.2272.16.ebuild,v 1.1 2015/01/26 15:43:32 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -19,7 +19,7 @@ SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="bindist cups gnome gnome-keyring kerberos neon pic pulseaudio selinux +tcmalloc"
+IUSE="bindist cups gnome gnome-keyring hidpi kerberos neon pic pulseaudio selinux +tcmalloc"
 RESTRICT="!bindist? ( bindist )"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
@@ -148,6 +148,13 @@ For other desktop environments, try one of the following:
 - x11-themes/tango-icon-theme
 "
 
+pkg_pretend() {
+	if [[ $(tc-getCC)$ == *gcc* ]] && \
+		[[ $(gcc-major-version)$(gcc-minor-version) -lt 48 ]]; then
+		die 'At least gcc 4.8 is required, see bugs: #535730, #525374, #518668.'
+	fi
+}
+
 pkg_setup() {
 	if [[ "${SLOT}" == "0" ]]; then
 		CHROMIUM_SUFFIX=""
@@ -178,6 +185,7 @@ src_prepare() {
 	# fi
 
 	epatch "${FILESDIR}/${PN}-system-jinja-r7.patch"
+	epatch "${FILESDIR}/${PN}-cups-r0.patch"
 
 	epatch_user
 
@@ -227,7 +235,6 @@ src_prepare() {
 		'third_party/libusb' \
 		'third_party/libvpx' \
 		'third_party/libvpx/source/libvpx/third_party/x86inc' \
-		'third_party/libwebm' \
 		'third_party/libxml/chromium' \
 		'third_party/libXNVCtrl' \
 		'third_party/libyuv' \
@@ -242,6 +249,7 @@ src_prepare() {
 		'third_party/ots' \
 		'third_party/pdfium' \
 		'third_party/pdfium/third_party/bigint' \
+		'third_party/pdfium/third_party/freetype' \
 		'third_party/pdfium/third_party/logging.h' \
 		'third_party/pdfium/third_party/macros.h' \
 		'third_party/pdfium/third_party/numerics' \
@@ -346,6 +354,7 @@ src_configure() {
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
+		$(gyp_use hidpi enable_hidpi)
 		$(gyp_use kerberos)
 		$(gyp_use pulseaudio)
 		$(gyp_use tcmalloc use_allocator tcmalloc none)"
