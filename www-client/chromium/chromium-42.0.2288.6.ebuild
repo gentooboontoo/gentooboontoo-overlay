@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-41.0.2267.0.ebuild,v 1.1 2015/01/07 14:59:19 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-42.0.2288.6.ebuild,v 1.1 2015/01/29 21:19:52 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -14,12 +14,12 @@ inherit chromium eutils flag-o-matic multilib multiprocessing pax-utils \
 
 DESCRIPTION="Open-source version of Google Chrome web browser"
 HOMEPAGE="http://chromium.org/"
-SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}-lite.tar.xz"
+SRC_URI="https://commondatastorage.googleapis.com/chromium-browser-official/${P}.tar.xz"
 
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~x86"
-IUSE="bindist cups gnome gnome-keyring kerberos neon pic pulseaudio selinux +tcmalloc"
+IUSE="bindist cups gnome gnome-keyring hidpi kerberos neon pic pulseaudio selinux +tcmalloc"
 RESTRICT="!bindist? ( bindist )"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
@@ -32,6 +32,7 @@ QA_PRESTRIPPED=".*\.nexe"
 RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	app-arch/bzip2:=
 	app-arch/snappy:=
+	app-crypt/libsecret:=
 	cups? (
 		dev-libs/libgcrypt:0=
 		>=net-print/cups-1.3.11:=
@@ -148,6 +149,13 @@ For other desktop environments, try one of the following:
 - x11-themes/tango-icon-theme
 "
 
+pkg_pretend() {
+	if [[ $(tc-getCC)$ == *gcc* ]] && \
+		[[ $(gcc-major-version)$(gcc-minor-version) -lt 48 ]]; then
+		die 'At least gcc 4.8 is required, see bugs: #535730, #525374, #518668.'
+	fi
+}
+
 pkg_setup() {
 	if [[ "${SLOT}" == "0" ]]; then
 		CHROMIUM_SUFFIX=""
@@ -178,6 +186,7 @@ src_prepare() {
 	# fi
 
 	epatch "${FILESDIR}/${PN}-system-jinja-r7.patch"
+	epatch "${FILESDIR}/${PN}-libsecret-r0.patch"
 
 	epatch_user
 
@@ -234,6 +243,7 @@ src_prepare() {
 		'third_party/lzma_sdk' \
 		'third_party/mesa' \
 		'third_party/modp_b64' \
+		'third_party/mojo' \
 		'third_party/mt19937ar' \
 		'third_party/npapi' \
 		'third_party/openmax_dl' \
@@ -241,6 +251,7 @@ src_prepare() {
 		'third_party/ots' \
 		'third_party/pdfium' \
 		'third_party/pdfium/third_party/bigint' \
+		'third_party/pdfium/third_party/freetype' \
 		'third_party/pdfium/third_party/logging.h' \
 		'third_party/pdfium/third_party/macros.h' \
 		'third_party/pdfium/third_party/numerics' \
@@ -345,6 +356,7 @@ src_configure() {
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
+		$(gyp_use hidpi enable_hidpi)
 		$(gyp_use kerberos)
 		$(gyp_use pulseaudio)
 		$(gyp_use tcmalloc use_allocator tcmalloc none)"
