@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-42.0.2288.6.ebuild,v 1.4 2015/02/09 10:39:40 zx2c4 Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-42.0.2305.3.ebuild,v 1.2 2015/02/19 11:22:31 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -225,6 +225,7 @@ src_prepare() {
 		'net/third_party/mozilla_security_manager' \
 		'net/third_party/nss' \
 		'third_party/WebKit' \
+		'third_party/analytics' \
 		'third_party/angle' \
 		'third_party/angle/src/third_party/compiler' \
 		'third_party/brotli' \
@@ -267,12 +268,9 @@ src_prepare() {
 		'third_party/opus' \
 		'third_party/ots' \
 		'third_party/pdfium' \
+		'third_party/pdfium/third_party/base' \
 		'third_party/pdfium/third_party/bigint' \
 		'third_party/pdfium/third_party/freetype' \
-		'third_party/pdfium/third_party/logging.h' \
-		'third_party/pdfium/third_party/macros.h' \
-		'third_party/pdfium/third_party/numerics' \
-		'third_party/pdfium/third_party/template_util.h' \
 		'third_party/polymer' \
 		'third_party/protobuf' \
 		'third_party/qcms' \
@@ -394,10 +392,16 @@ src_configure() {
 	myconf+="
 		-Dlogging_like_official_build=1"
 
+	if [[ $(tc-getCC) == *clang* ]]; then
+		myconf+=" -Dclang=1"
+	else
+		myconf+=" -Dclang=0"
+	fi
+
 	# Never use bundled gold binary. Disable gold linker flags for now.
 	# Do not use bundled clang.
 	myconf+="
-		-Dclang=0
+		-Dclang_use_chrome_plugins=0
 		-Dhost_clang=0
 		-Dlinux_use_bundled_binutils=0
 		-Dlinux_use_bundled_gold=0
@@ -593,7 +597,6 @@ src_install() {
 	newman out/Release/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
 
 	doexe out/Release/libffmpegsumo.so || die
-	doexe out/Release/libpdf.so || die
 	if use widevine; then
 		doexe out/Release/libwidevinecdmadapter.so || die
 	fi
